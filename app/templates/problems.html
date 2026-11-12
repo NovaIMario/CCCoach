@@ -8,15 +8,15 @@
     <option value="lc">LeetCode</option>
   </select>
   <div class="field">
-    <input id="name" placeholder="Problem name (Trie autocomplete)" autocomplete="off">
+    <input id="name" placeholder="Problem name" autocomplete="off">
     <div id="name-dropdown" class="dropdown"></div>
   </div>
   <select id="tag">
     <option value="">Any tag</option>
     {% for t in tags %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
   </select>
-  <input id="min" type="number" step="100" placeholder="Min rating (CF scale)">
-  <input id="max" type="number" step="100" placeholder="Max rating (CF scale)">
+  <input id="min" type="number" step="100" placeholder="Min rating" title="Codeforces scale (LeetCode ratings are converted)">
+  <input id="max" type="number" step="100" placeholder="Max rating" title="Codeforces scale (LeetCode ratings are converted)">
   <button id="go">Search</button>
 </div>
 <p id="count" class="muted"></p>
@@ -25,6 +25,6 @@
 {% endblock %}
 {% block scripts %}
 <script>const NAMES = {{ names|tojson }};</script>
-<script src="/static/trie.js"></script>
-<script src="/static/problems.js"></script>
+<script src="/static/trie.js?v={{ v }}"></script>
+<script src="/static/problems.js?v={{ v }}"></script>
 {% endblock %}

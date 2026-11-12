@@ -94,5 +94,7 @@ def html_to_text(content: str) -> str:
     """LeetCode statements are HTML. Keep line breaks, mark exponents, drop all other tags."""
     content = re.sub(r"<sup>(.*?)</sup>", r"^\1", content, flags=re.S)
     content = _BLOCK.sub("\n", content)
-    content = html.unescape(_TAG.sub("", content))
+    content = html.unescape(_TAG.sub("", content)).replace("\xa0", " ")
+    content = re.sub(r"[ \t]+\n", "\n", content)         # trailing spaces (LeetCode pads with &nbsp;)
+    content = re.sub(r"\n[ \t]+(?=\n)", "\n", content)    # lines that are only spaces
     return re.sub(r"\n{3,}", "\n\n", content).strip()

@@ -13,6 +13,7 @@ function trieFor(platform) {
 }
 
 const PAGE = 24;
+const LIMIT = 1000;  // the API caps a search at this many results
 let results = [];
 let page = 0;
 
@@ -56,8 +57,9 @@ function card(p) {
 function render() {
   const start = page * PAGE;
   $("results").replaceChildren(...results.slice(start, start + PAGE).map(card));
+  const total = results.length >= LIMIT ? `${LIMIT}+ problems (narrow the search to see more)` : `${results.length} problems`;
   $("count").textContent = results.length
-    ? `${results.length} problems · showing ${start + 1}–${Math.min(start + PAGE, results.length)}`
+    ? `${total} · showing ${start + 1}–${Math.min(start + PAGE, results.length)}`
     : "No problems found.";
   $("prev").disabled = page === 0;
   $("next").disabled = start + PAGE >= results.length;
@@ -65,7 +67,7 @@ function render() {
 
 async function search() {
   hideDropdown();
-  const params = new URLSearchParams({ limit: 1000, platform: $("platform").value });
+  const params = new URLSearchParams({ limit: LIMIT, platform: $("platform").value });
   if ($("name").value) params.set("name", $("name").value);
   if ($("tag").value) params.set("tag", $("tag").value);
   if ($("min").value) params.set("min_rating", $("min").value);

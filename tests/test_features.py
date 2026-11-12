@@ -29,6 +29,15 @@ def test_rating_features_shape_and_values(problems):
     assert np.isclose(X[0, 0], np.log1p(20000))
 
 
+def test_split_cf_header():
+    from app.problems import split_cf_header
+    limits, body = split_cf_header("C. MEX Cycle time limit per test 2 seconds memory limit per test 256 megabytes "
+                                   "input standard input output standard output Evirir the dragon...")
+    assert limits == "Time limit 2 seconds · Memory limit 256 megabytes"
+    assert body == "Evirir the dragon..."
+    assert split_cf_header("No header here") == (None, "No header here")
+
+
 def test_clean_statement_drops_header_and_math():
     raw = ("C. Sum time limit per test 1 second memory limit per test 256 megabytes input standard input "
            "output standard output You are given $$$n$$$ numbers.")

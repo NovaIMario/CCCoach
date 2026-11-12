@@ -92,6 +92,6 @@
   const HISTORY = {{ cf.history|tojson }};
   const SOLVED = {{ cf.solved_histogram|tojson }};
 </script>
-<script src="/static/charts.js"></script>
+<script src="/static/charts.js?v={{ v }}"></script>
 {% endif %}
 {% endblock %}

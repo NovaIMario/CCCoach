@@ -4,6 +4,7 @@ optional statements and predicted ratings for problems Codeforces hasn't rated y
 About 11,000 problems fit easily in memory, so search is a simple filter over a list.
 """
 import json
+import re
 import time
 from pathlib import Path
 
@@ -122,6 +123,20 @@ class ProblemStore:
 def effective_rating(p: dict) -> int | None:
     """The official rating, or our prediction when Codeforces hasn't rated it."""
     return p["rating"] if p["rating"] is not None else p["predicted_rating"]
+
+
+_CF_HEADER = re.compile(
+    r"^.*?time limit per test\s+(?P<time>.*?)\s+memory limit per test\s+(?P<mem>.*?)\s+"
+    r"input\s+.*?\s+output\s+standard output\s*", re.S | re.I)
+
+
+def split_cf_header(statement: str) -> tuple[str | None, str]:
+    """Scraped statements start with 'C. Name time limit per test 2 seconds memory limit ...
+    standard output'. Return ("Time limit 2 seconds · Memory limit 256 megabytes", rest)."""
+    m = _CF_HEADER.match(statement)
+    if not m:
+        return None, statement
+    return f"Time limit {m['time']} · Memory limit {m['mem']}", statement[m.end():].strip()
 
 
 def problem_key(p: dict) -> tuple:

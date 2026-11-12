@@ -18,7 +18,7 @@ from .codeforces import CodeforcesClient, CodeforcesError
 from .lc_problems import LC_TO_CF_TAG
 from .leetcode import LeetCodeClient, LeetCodeError
 from .ml.models import load_models
-from .problems import ProblemStore, effective_rating
+from .problems import ProblemStore, effective_rating, split_cf_header
 from .recommend import recommend
 from .runner import LANGUAGES, run_code
 
@@ -72,6 +72,9 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
     app = FastAPI(title="CCCoach", lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
+    # Cache-buster for /static files: changes whenever any static file changes, so browsers
+    # pick up new JS/CSS right after a deploy instead of serving a stale cached copy.
+    templates.env.globals["v"] = max(int(f.stat().st_mtime) for f in (HERE / "static").iterdir())
 
     def page(request: Request, name: str, **ctx):
         return templates.TemplateResponse(request, name, ctx)
@@ -190,7 +193,10 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
 
     def problem_view(request: Request, p: dict, statement: str):
         is_lc = p.get("platform") == "lc"
-        return page(request, "problem.html", p=p, is_lc=is_lc, rating=effective_rating(p), statement=statement,
+        limits = None
+        if not is_lc and statement:
+            limits, statement = split_cf_header(statement)
+        return page(request, "problem.html", p=p, is_lc=is_lc, rating=effective_rating(p), statement=statement, limits=limits,
                     title=(f"{p['frontend_id']}. {p['name']}" if is_lc else f"{p['contest_id']}{p['index']}. {p['name']}"),
                     ext_url=p["url"] if is_lc else f"https://codeforces.com/contest/{p['contest_id']}/problem/{p['index']}",
                     js_problem=({"slug": p["slug"]} if is_lc else {"contest_id": p["contest_id"], "index": p["index"]}),
@@ -251,7 +257,8 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         if not app.state.rating_model:
             raise HTTPException(503, "Rating model not loaded")
         pred = app.state.rating_model.predict([p], app.state.store.problems)[0]
-        return {"contest_id": contest_id, "index": p["index"], "official_rating": p["rating"], "predicted_rating": pred}
+        return {"contest_id": contest_id, "index": p["index"], "name": p["name"], "solved_count": p["solved_count"],
+                "official_rating": p["rating"], "predicted_rating": pred}
 
     @app.post("/api/predict-tags")
     def api_predict_tags(req: TagRequest):

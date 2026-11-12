@@ -10,6 +10,12 @@ Chart.defaults.borderColor = grid;
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 
 function historyChart(series) {
+  // Short histories get "Mar 25"-style ticks; long ones (years of contests) just the year.
+  const times = series.flatMap(s => s.data.map(c => c.t));
+  const spanYears = (Math.max(...times) - Math.min(...times)) / 3.15e7;
+  const tick = spanYears < 4
+    ? v => new Date(v).toLocaleDateString("en-GB", { month: "short", year: "2-digit" })
+    : v => new Date(v).getFullYear();
   new Chart(document.getElementById("history"), {
     type: "line",
     data: {
@@ -22,7 +28,7 @@ function historyChart(series) {
     options: {
       parsing: false,
       scales: {
-        x: { type: "linear", ticks: { callback: v => new Date(v).getFullYear() } },
+        x: { type: "linear", ticks: { callback: tick, maxTicksLimit: 8 } },
         y: { title: { display: true, text: "Rating" } },
       },
       plugins: {

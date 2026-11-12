@@ -4,6 +4,8 @@ A training coach for competitive programmers. It reads your **Codeforces** and *
 finds the topics you under-practise for your rating, recommends the next problems to solve, and lets you
 solve them in the browser with a code editor, a code runner and AI hints.
 
+**Live:** https://cccoach.onrender.com (free tier, so the first load after a quiet spell takes ~30s)
+
 CCCoach merges three earlier projects into one app:
 
 | Earlier project | What it did | What CCCoach adds |
