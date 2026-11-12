@@ -61,8 +61,40 @@ function render() {
   $("count").textContent = results.length
     ? `${total} · showing ${start + 1}–${Math.min(start + PAGE, results.length)}`
     : "No problems found.";
+  const pages = Math.ceil(results.length / PAGE);
   $("prev").disabled = page === 0;
-  $("next").disabled = start + PAGE >= results.length;
+  $("next").disabled = page >= pages - 1;
+  document.querySelector(".pager").hidden = pages <= 1;
+  $("pages").replaceChildren(...pageList(page, pages).map(n => {
+    if (n === null) return el("span", "pg-gap", "…");
+    const b = el("button", n === page ? "pg on" : "pg", String(n + 1));
+    if (n === page) b.setAttribute("aria-current", "page");
+    b.addEventListener("click", () => goTo(n));
+    return b;
+  }));
+}
+
+// Page numbers to show (0-based), with null for a "…" gap: always the first and last page plus a
+// window around the current one, e.g. 1 … 4 5 [6] 7 8 … 42. A gap that would hide a single page
+// shows that page instead, so "…" always stands for at least two pages.
+function pageList(current, total) {
+  const span = matchMedia("(max-width: 600px)").matches ? 1 : 2;
+  const keep = new Set([0, total - 1]);
+  for (let i = current - span; i <= current + span; i++) if (i >= 0 && i < total) keep.add(i);
+  const sorted = [...keep].sort((a, b) => a - b), out = [];
+  sorted.forEach((n, i) => {
+    const prev = sorted[i - 1];
+    if (i && n - prev === 2) out.push(n - 1);
+    else if (i && n - prev > 2) out.push(null);
+    out.push(n);
+  });
+  return out;
+}
+
+function goTo(n) {
+  page = n;
+  render();
+  scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function search() {
@@ -105,8 +137,8 @@ $("name").addEventListener("input", () => {
 $("name").addEventListener("blur", () => setTimeout(hideDropdown, 100));
 $("go").addEventListener("click", search);
 $("platform").addEventListener("change", search);
-$("prev").addEventListener("click", () => { page--; render(); scrollTo({ top: 0, behavior: "smooth" }); });
-$("next").addEventListener("click", () => { page++; render(); scrollTo({ top: 0, behavior: "smooth" }); });
+$("prev").addEventListener("click", () => goTo(page - 1));
+$("next").addEventListener("click", () => goTo(page + 1));
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("input, select")) search(); });
 
 search();

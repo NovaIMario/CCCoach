@@ -21,7 +21,7 @@
 </div>
 <p id="count" class="muted"></p>
 <div id="results" class="cards"></div>
-<div class="pager"><button id="prev">Prev</button><button id="next">Next</button></div>
+<nav class="pager" aria-label="Result pages"><button id="prev" class="secondary">&lsaquo; Prev</button><span id="pages" class="pages"></span><button id="next" class="secondary">Next &rsaquo;</button></nav>
 {% endblock %}
 {% block scripts %}
 <script>const NAMES = {{ names|tojson }};</script>
