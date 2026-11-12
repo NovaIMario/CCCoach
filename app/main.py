@@ -12,13 +12,13 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from . import analysis, config
 from .ai import AIUnavailable, HintService, RateLimiter
 from .codeforces import CodeforcesClient, CodeforcesError
-from .lc_problems import LC_TO_CF_TAG
 from .leetcode import LeetCodeClient, LeetCodeError
 from .ml.models import load_models
 from .problems import ProblemStore, effective_rating, split_cf_header
@@ -139,8 +139,17 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
     # pick up new JS/CSS right after a deploy instead of serving a stale cached copy.
     templates.env.globals["v"] = max(int(f.stat().st_mtime) for f in (HERE / "static").iterdir())
 
-    def page(request: Request, name: str, **ctx):
-        return templates.TemplateResponse(request, name, ctx)
+    def page(request: Request, name: str, status_code: int = 200, **ctx):
+        return templates.TemplateResponse(request, name, ctx, status_code=status_code)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(request: Request, exc: StarletteHTTPException):
+        """API routes keep JSON errors; a person browsing gets a proper page instead of raw JSON."""
+        path = request.url.path
+        if path.startswith(("/api/", "/static/")) or "text/html" not in request.headers.get("accept", ""):
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))
+        message = exc.detail if exc.status_code != 404 or exc.detail != "Not Found" else "That page doesn't exist."
+        return page(request, "error.html", status_code=exc.status_code, code=exc.status_code, message=message)
 
     # ---------- shared logic ----------
 
@@ -152,7 +161,9 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
             history = st.cf.rating_history(handle)
             subs = st.cf.submissions(handle)
         except CodeforcesError as e:
-            raise HTTPException(404, f"Codeforces: {e}")
+            if "not found" in str(e).lower():
+                raise HTTPException(404, f'No Codeforces user called "{handle}". Check the spelling.')
+            raise HTTPException(502, f"Couldn't reach Codeforces right now ({e}). Try again in a minute.")
         keys = analysis.solved_keys(subs)
         solved = [p for k in keys if (p := st.store.by_key.get(k))]
         return {
@@ -179,7 +190,7 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         extra = analysis.lc_tag_counts(lcd) if lcd else None
         tags = analysis.tag_profile(solved, st.store.problems, level, extra_counts=extra,
                                     extra_total=lcd["solved_total"] if lcd else 0,
-                                    extra_tags=set(LC_TO_CF_TAG.values()) if lcd else set())
+                                    extra_tags=analysis.lc_reported_tags(lcd) if lcd else set())
         weak = [t["tag"] for t in tags[:5]]
         cf_solved = cfd["_solved_keys"] if cfd else set()
         lc_solved = {("lc", s) for s in lcd["recent_solved"]} if lcd else set()

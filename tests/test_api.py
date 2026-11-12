@@ -71,7 +71,7 @@ def test_pages_render(client):
 
 
 def test_profile_page_shows_error_for_unknown_handle(client):
-    assert "not found" in client.get("/profile?cf=ghost").text
+    assert "No Codeforces user called &#34;ghost&#34;" in client.get("/profile?cf=ghost").text
 
 
 def test_html_is_escaped(client, problems):
@@ -112,3 +112,16 @@ def test_favicons_are_served(client):
     assert client.get("/static/favicon.svg").headers["content-type"].startswith("image/svg+xml")
     assert client.get("/static/apple-touch-icon.png").status_code == 200
     assert 'rel="icon" href="/static/favicon.svg' in client.get("/").text
+
+
+def test_unknown_pages_get_an_html_404_but_api_keeps_json(client):
+    r = client.get("/nope", headers={"accept": "text/html"})
+    assert r.status_code == 404 and "<h1>Not found</h1>" in r.text and "Browse problems" in r.text
+    r = client.get("/problem/1/ZZ", headers={"accept": "text/html"})
+    assert r.status_code == 404 and "Problem not found" in r.text
+    api = client.get("/api/predict-rating/1/ZZ")
+    assert api.status_code == 404 and api.json() == {"detail": "Problem not found"}
+
+
+def test_empty_profile_page_explains_what_to_enter(client):
+    assert "Enter a Codeforces handle, a LeetCode username, or both" in client.get("/profile").text

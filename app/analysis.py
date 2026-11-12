@@ -58,6 +58,14 @@ def lc_tag_counts(lc_profile: dict) -> Counter:
     return out
 
 
+def lc_reported_tags(lc_profile: dict) -> set[str]:
+    """Codeforces tags LeetCode actually reported counts for. LeetCode's public "skills" list covers
+    a fixed set of tags and never includes some (e.g. number theory, combinatorics, geometry), even
+    for users who solved hundreds of such problems; for those we must not assume 0 LeetCode solves."""
+    from .lc_problems import LC_TO_CF_TAG
+    return {LC_TO_CF_TAG[s] for s in lc_profile.get("tag_counts", {}) if s in LC_TO_CF_TAG}
+
+
 def tag_profile(solved: list[dict], all_problems: list[dict], level: int, window: int = 300,
                 min_expected: int = 30, extra_counts: Counter | None = None, extra_total: int = 0,
                 extra_tags: set[str] | None = None) -> list[dict]:
@@ -84,8 +92,10 @@ def tag_profile(solved: list[dict], all_problems: list[dict], level: int, window
         expected = cnt / n_nearby
         if tag in extra_tags:
             solved_n, total = solved_counts.get(tag, 0) + extra_counts.get(tag, 0), len(solved) + extra_total
-        else:
+        elif solved:
             solved_n, total = solved_counts.get(tag, 0), len(solved)
+        else:
+            continue  # LeetCode-only user and LeetCode can't count this tag: no data, so don't call it weak
         actual = solved_n / max(total, 1)
         solved_counts[tag] = solved_n
         hardest = max((effective_rating(p) or 0 for p in solved if tag in p["tags"]), default=0)

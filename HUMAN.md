@@ -150,7 +150,7 @@ It's a guard, not a guarantee: a determined user can still sometimes talk a mode
 
 ## Tests (`tests/`)
 
-64 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
+69 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
 then `create_app(...)` is given those fakes. Covered: stats, weak tags, recommendations, features, runner limits and
 secrets, every page renders, HTML escaping, API errors (unknown handle → 404, bad language → 400).
 CI (`.github/workflows/ci.yml`) runs the tests, then builds the Docker image and checks `/health`.

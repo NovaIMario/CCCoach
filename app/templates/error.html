@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} · CCCoach{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>{{ "Not found" if code == 404 else "Something went wrong" }}</h1>
+  <p class="muted">{{ message }}</p>
+  <p><a href="/problems">Browse problems</a> · <a href="/">Analyse a profile</a></p>
+</section>
+{% endblock %}

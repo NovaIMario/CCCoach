@@ -78,7 +78,22 @@ def test_lc_practice_does_not_dilute_tags_lc_cannot_express(problems):
 
 def test_lc_practice_counts_in_weak_tags(problems):
     # with no CF solves, LeetCode dp practice should make dp look less weak than graphs
+    # (LeetCode reported both tags, graphs with 0 solves)
     tags = analysis.tag_profile([], problems, level=1500, min_expected=5,
-                                extra_counts=Counter({"dp": 50}), extra_total=60)
+                                extra_counts=Counter({"dp": 50}), extra_total=60, extra_tags={"dp", "graphs"})
     order = [t["tag"] for t in tags]
     assert order.index("graphs") < order.index("dp")
+
+
+def test_lc_only_user_is_not_judged_on_tags_leetcode_cant_count(problems):
+    # LeetCode never reports e.g. "number theory": with no Codeforces data that tag has no evidence,
+    # so it must be left out rather than shown as 0% (the weakest).
+    tags = analysis.tag_profile([], problems, level=1500, min_expected=5,
+                                extra_counts=Counter({"dp": 50}), extra_total=60, extra_tags={"dp"})
+    assert [t["tag"] for t in tags] == ["dp"]
+
+
+def test_lc_reported_tags_only_includes_what_leetcode_returned():
+    reported = analysis.lc_reported_tags({"tag_counts": {"dynamic-programming": 6, "array": 10}})
+    assert reported == {"dp"}   # "array" has no Codeforces equivalent, so it adds nothing
+    assert "number theory" not in reported

@@ -54,7 +54,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
-.stat b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.stat b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stat span { color: var(--muted); font-size: 0.85rem; }
 .stats.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 8px 0; }
 .stats.compact .stat { background: var(--bg); }
@@ -188,3 +188,11 @@ body.resizing iframe, body.resizing #editor { pointer-events: none; }
 .paste-box ol { margin: 0 0 10px; padding-left: 1.2em; }
 .paste-box textarea { resize: vertical; font-size: 0.85rem; }
 .paste-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+
+/* Phones: keep stat numbers on one line and the tag table inside its card. */
+@media (max-width: 600px) {
+  .stat b { font-size: 1.15rem; }
+  .col-hard { display: none; }
+  .table { font-size: 0.82rem; }
+  .table th, .table td { padding: 6px 5px; }
+}
