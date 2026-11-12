@@ -34,7 +34,7 @@ This file explains the project so you can find your way around, explain it in an
 
 1. `main.py` `/profile?cf=handle&lc=user` calls `cf_profile(handle)`.
 2. That makes three Codeforces calls (user info, rating history, all submissions) through `CodeforcesClient`,
-   which waits ~0.6s between calls (Codeforces limits request rate) and caches results for 10 minutes.
+   which waits 2s between calls (the API allows about one call every 2 seconds) and caches results for 10 minutes.
 3. `analysis.solved_keys` keeps accepted submissions only → a set of `(contest_id, index)`.
 4. Those keys are looked up in the `ProblemStore` to get each solved problem's tags and rating.
 5. `analysis.user_level` = current rating (or the median rating of solved problems if unrated).

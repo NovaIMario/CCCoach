@@ -18,7 +18,7 @@ class CodeforcesError(Exception):
 
 
 class CodeforcesClient:
-    def __init__(self, ttl: float = 600, min_interval: float = 0.6, http: httpx.Client | None = None):
+    def __init__(self, ttl: float = 600, min_interval: float = 2.0, http: httpx.Client | None = None):
         self.ttl = ttl
         self.min_interval = min_interval
         self.http = http or httpx.Client(timeout=30, headers={"User-Agent": "CCCoach/1.0"})
