@@ -78,6 +78,32 @@ if (st) {
   typesetStatement();
 }
 
+// ---------- Paste a missing statement ----------
+
+const pasteForm = $("paste-form");
+if (pasteForm) pasteForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("paste-msg"), btn = pasteForm.querySelector("button");
+  const text = $("paste-text").value.trim();
+  if (!text) { msg.textContent = "Paste the statement first."; return; }
+  btn.disabled = true;
+  msg.textContent = "Saving...";
+  try {
+    const res = await fetch("/api/statement", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contest_id: PROBLEM.contest_id, index: PROBLEM.index, statement: text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 409) throw new Error(typeof data.detail === "string" ? data.detail : `HTTP ${res.status}`);
+    msg.textContent = "Saved! Reloading...";
+    location.reload();
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.classList.add("error");
+    btn.disabled = false;
+  }
+});
+
 // ---------- Editor + runner ----------
 
 const TEMPLATES = {

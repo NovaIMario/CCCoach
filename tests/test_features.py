@@ -36,6 +36,9 @@ def test_split_cf_header():
     assert limits == "Time limit 2 seconds · Memory limit 256 megabytes"
     assert body == "Evirir the dragon..."
     assert split_cf_header("No header here") == (None, "No header here")
+    # file input, no "standard input/output" lines
+    limits, body = split_cf_header("A. X time limit per test 0.5 seconds memory limit per test 64 megabytes Find x.")
+    assert limits == "Time limit 0.5 seconds · Memory limit 64 megabytes" and body == "Find x."
 
 
 def test_clean_statement_drops_header_and_math():

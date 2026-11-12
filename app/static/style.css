@@ -174,3 +174,10 @@ body.resizing iframe, body.resizing #editor { pointer-events: none; }
   .io { grid-template-columns: 1fr; flex-basis: 220px; }
 }
 @media (max-width: 800px) { .hero h1 { font-size: 1.6rem; } }
+
+/* "We don't have this statement yet" paste box on the problem page */
+.paste-box { border: 1px dashed var(--line); border-radius: 8px; padding: 12px; margin: 8px 0 12px; }
+.paste-box p { margin: 0 0 6px; }
+.paste-box ol { margin: 0 0 10px; padding-left: 1.2em; }
+.paste-box textarea { resize: vertical; font-size: 0.85rem; }
+.paste-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }

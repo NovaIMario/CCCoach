@@ -27,8 +27,21 @@
     </p>
     {% if statement %}
       <div id="statement-text" class="statement-text">{{ statement }}</div>
+    {% elif is_lc %}
+      <p class="muted">LeetCode didn't return this statement (it may be a Premium problem).</p>
     {% else %}
-      <p class="muted">No local copy of this statement.</p>
+      <div class="paste-box">
+        <p><strong>We don't have this statement yet.</strong> It's probably from a recent contest.</p>
+        <ol class="muted small">
+          <li><a href="{{ ext_url }}" target="_blank" rel="noopener">Open it on Codeforces</a>.</li>
+          <li>Select the statement from its title (<em>{{ p.index }}. {{ p.name }}</em>) down to the examples, and copy it.</li>
+          <li>Paste it below. It's saved for everyone, and the AI coach will use it too.</li>
+        </ol>
+        <form id="paste-form">
+          <textarea id="paste-text" rows="8" maxlength="20000" placeholder="{{ p.index }}. {{ p.name }}&#10;time limit per test ..."></textarea>
+          <div class="paste-row"><button type="submit" class="sm">Save statement</button><span id="paste-msg" class="small muted"></span></div>
+        </form>
+      </div>
     {% endif %}
     <p><a href="{{ ext_url }}" target="_blank" rel="noopener">Open on {{ "LeetCode" if is_lc else "Codeforces" }} (full statement, examples, submit) &rarr;</a></p>
   </div>

@@ -55,6 +55,26 @@ This file explains the project so you can find your way around, explain it in an
 
 Search is a linear filter over ~11.5k dicts; that takes about a millisecond, so no database is needed.
 
+## Statements (`statements_db.py`)
+
+Codeforces statements can't be fetched live: Codeforces sits behind a Cloudflare bot check that blocks
+server requests (an honestly-labelled request gets HTTP 403), and CCCoach deliberately doesn't try to get
+around it. So statements come from three places, merged into the problem store's memory:
+
+1. `data/statements.json`: optional local file (10,118 statements exported from CFSeer). Not in the Docker image.
+2. **The database** (`DATABASE_URL`, e.g. Supabase): CFSeer's `problems` table (filled by CFSeer's scraper,
+   which you run yourself) plus CCCoach's own `cccoach_statements` table. A background thread loads everything
+   at startup and again every `STATEMENT_REFRESH_HOURS` (6). If the database was down at startup it keeps retrying.
+   A problem missing from memory is also looked up on demand (misses cached for 10 minutes).
+3. **Pasted by users**: a problem with no statement shows a paste box. `POST /api/statement` checks the text
+   (150 to 20,000 characters, must contain the problem's name), refuses to overwrite an existing statement,
+   allows 5 pastes per 10 minutes per IP, and saves it to `cccoach_statements` (or to
+   `data/user_statements.json` without a database). Pasted rows are kept apart from CFSeer's table so unverified
+   user text never ends up in model training data. First paste wins: if someone pastes junk that passes the
+   checks, delete that row in Supabase.
+
+`scripts/upload_statements.py` copies `data/statements.json` into a fresh database (safe to re-run).
+
 ## LeetCode (`lc_problems.py`, `leetcode.py`)
 
 - **Problems:** on startup, LeetCode's GraphQL `questionList` (all problems, tags, Premium flag) and zerotrac's ratings
@@ -125,7 +145,7 @@ It's a guard, not a guarantee: a determined user can still sometimes talk a mode
 
 ## Tests (`tests/`)
 
-52 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
+59 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
 then `create_app(...)` is given those fakes. Covered: stats, weak tags, recommendations, features, runner limits and
 secrets, every page renders, HTML escaping, API errors (unknown handle → 404, bad language → 400).
 CI (`.github/workflows/ci.yml`) runs the tests, then builds the Docker image and checks `/health`.

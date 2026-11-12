@@ -125,9 +125,13 @@ def effective_rating(p: dict) -> int | None:
     return p["rating"] if p["rating"] is not None else p["predicted_rating"]
 
 
+# "C. Name  time limit per test 2 seconds  memory limit per test 256 megabytes  input standard input
+#  output standard output". The input/output part is optional (some problems read files) and the
+# whitespace may be spaces (scraped) or newlines (pasted from the page).
 _CF_HEADER = re.compile(
-    r"^.*?time limit per test\s+(?P<time>.*?)\s+memory limit per test\s+(?P<mem>.*?)\s+"
-    r"input\s+.*?\s+output\s+standard output\s*", re.S | re.I)
+    r"^.{0,200}?time limit per test\s*(?P<time>\d+(?:\.\d+)?\s*seconds?)\s*"
+    r"memory limit per test\s*(?P<mem>\d+\s*megabytes?)\s*"
+    r"(?:input\s*\S+(?:\s+input)?\s*output\s*\S+(?:\s+output)?)?\s*", re.S | re.I)
 
 
 def split_cf_header(statement: str) -> tuple[str | None, str]:

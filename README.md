@@ -49,6 +49,12 @@ What made the difference:
 - **Compare** — two Codeforces users side by side.
 - **Models page** — metrics and a live tag predictor.
 
+## Statements
+
+Codeforces blocks server-side page fetches (Cloudflare), and CCCoach doesn't try to get around that. Statements
+come from an optional local file, a Postgres/Supabase database (`DATABASE_URL`, re-synced every 6 hours), and
+users pasting in any that are missing, which are then saved for everyone. Details in [HUMAN.md](HUMAN.md).
+
 ## Run it
 
 ```bash

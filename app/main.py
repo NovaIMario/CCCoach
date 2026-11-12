@@ -3,6 +3,9 @@
 `create_app` takes its dependencies as arguments so tests can pass in fakes
 instead of calling Codeforces, LeetCode or Gemini.
 """
+import logging
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -21,6 +24,9 @@ from .ml.models import load_models
 from .problems import ProblemStore, effective_rating, split_cf_header
 from .recommend import recommend
 from .runner import LANGUAGES, run_code
+from .statements_db import LocalStatements, clean_paste, open_backend
+
+log = logging.getLogger(__name__)
 
 HERE = Path(__file__).resolve().parent
 
@@ -46,13 +52,38 @@ class HintRequest(BaseModel):
     history: list[ChatTurn] = Field([], max_length=40)    # earlier turns; the service keeps the last 10
 
 
+class StatementPaste(BaseModel):
+    contest_id: int
+    index: str = Field(max_length=4)
+    statement: str = Field(max_length=40_000)  # cleaned and checked more strictly in clean_paste
+
+
 class TagRequest(BaseModel):
     statement: str = Field(min_length=20, max_length=20_000)
 
 
 def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = None,
                lc: LeetCodeClient | None = None, hints: HintService | None = None,
-               rating_model=None, tag_model=None, code_runner_enabled: bool | None = None) -> FastAPI:
+               rating_model=None, tag_model=None, code_runner_enabled: bool | None = None,
+               statements=None) -> FastAPI:
+
+    def sync_statements(s, stop: threading.Event):
+        """Background thread: pull statements from the database now, then every few hours.
+        Runs off the request path so a slow or paused database never delays startup."""
+        while True:
+            try:
+                if isinstance(s.statements, LocalStatements) and config.DATABASE_URL and statements is None:
+                    s.statements = open_backend(config.DATABASE_URL, config.DATA_DIR)  # retry the DB
+                fresh = s.statements.load_all()
+                added = sum(1 for k in fresh if k not in s.store.statements)
+                for k, v in fresh.items():
+                    s.store.statements.setdefault(k, v)
+                log.info("Statements synced: %d from %s (%d new)", len(fresh), type(s.statements).__name__, added)
+            except Exception as e:
+                log.warning("Statement sync failed: %s", str(e).splitlines()[0] if str(e) else e)
+            s.statement_sync_done.set()
+            if stop.wait(config.STATEMENT_REFRESH_HOURS * 3600):
+                return
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -74,7 +105,17 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
             s.store.fill_predicted_ratings(s.rating_model)
         s.runner_on = config.ENABLE_CODE_RUNNER if code_runner_enabled is None else code_runner_enabled
         s.limiter = RateLimiter(limit=10, window=60)
+        s.paste_limiter = RateLimiter(limit=5, window=600)
+        s.statement_misses: dict[str, float] = {}   # "cid/IDX" -> when the DB last had nothing
+        if statements is not None:
+            s.statements = statements
+        else:
+            s.statements = open_backend(config.DATABASE_URL, config.DATA_DIR)
+        s.statement_sync_done = threading.Event()  # set after the first sync (tests wait on it)
+        stop = threading.Event()
+        threading.Thread(target=sync_statements, args=(s, stop), daemon=True, name="statement-sync").start()
         yield
+        stop.set()
 
     app = FastAPI(title="CCCoach", lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -155,7 +196,25 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         p = st.store.get(contest_id or 0, index or "")
         if not p:
             raise HTTPException(404, "Problem not found")
-        return p, st.store.statement(p["contest_id"], p["index"]) or ""
+        return p, st.store.statement(p["contest_id"], p["index"]) or lookup_statement(p) or ""
+
+    def lookup_statement(p: dict) -> str | None:
+        """Not in memory: ask the database once (someone may have pasted or scraped it since the
+        last sync). Misses are remembered for 10 minutes so busy pages don't hammer the DB."""
+        st = app.state
+        k = f"{p['contest_id']}/{p['index'].upper()}"
+        if time.time() - st.statement_misses.get(k, 0) < 600:
+            return None
+        try:
+            text = st.statements.get(p["contest_id"], p["index"])
+        except Exception as e:
+            log.warning("Statement lookup failed: %s", e)
+            text = None
+        if text:
+            st.store.statements[k] = text
+        else:
+            st.statement_misses[k] = time.time()
+        return text
 
     # ---------- pages ----------
 
@@ -282,6 +341,33 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         if not app.state.limiter.allow(f"run:{request.client.host if request.client else '?'}"):
             raise HTTPException(429, "Too many runs, wait a minute")
         return run_code(req.language, req.code, req.stdin).to_dict()
+
+    @app.post("/api/statement")
+    def api_statement(req: StatementPaste, request: Request):
+        """A user pastes a statement we don't have. It's saved for everyone (database or local file)."""
+        st = app.state
+        p = st.store.get(req.contest_id, req.index)
+        if not p:
+            raise HTTPException(404, "Problem not found")
+        k = f"{p['contest_id']}/{p['index'].upper()}"
+        if st.store.statements.get(k):
+            raise HTTPException(409, "This problem already has a statement. Reload the page.")
+        if not st.paste_limiter.allow(f"paste:{request.client.host if request.client else '?'}"):
+            raise HTTPException(429, "Too many pasted statements, wait a few minutes")
+        try:
+            text = clean_paste(req.statement, p["name"])
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        try:
+            saved = st.statements.save(p["contest_id"], p["index"], text)
+        except Exception as e:
+            log.warning("Saving statement failed: %s", e)
+            raise HTTPException(503, "Couldn't save the statement right now, try again later")
+        if not saved:  # another server / the scraper got there first: use theirs
+            text = st.statements.get(p["contest_id"], p["index"]) or text
+        st.store.statements[k] = text
+        st.statement_misses.pop(k, None)
+        return {"ok": True, "saved": saved}
 
     @app.post("/api/hint")
     def api_hint(req: HintRequest, request: Request):

@@ -81,6 +81,26 @@ class FakeHints:
         return f"{mode} for {name}"
 
 
+class FakeStatements:
+    """In-memory stand-in for the statement database (never touches Supabase or data/)."""
+
+    def __init__(self, rows=None):
+        self.rows = dict(rows or {})
+
+    def load_all(self):
+        return dict(self.rows)
+
+    def get(self, contest_id, index):
+        return self.rows.get(f"{contest_id}/{index.upper()}")
+
+    def save(self, contest_id, index, text):
+        k = f"{contest_id}/{index.upper()}"
+        if k in self.rows:
+            return False
+        self.rows[k] = text
+        return True
+
+
 class FakeRatingModel:
     metrics = {}
 
@@ -93,7 +113,8 @@ def client(problems, lc_problems):
     # the user has solved lots of greedy/math/implementation but no dp or graphs
     solved = [(c, i) for c in range(1, 41) for i in ("A", "B")]
     store = ProblemStore(problems, {"1/A": "Read $$$n$$$ and print it."}, lc_problems)
-    app = create_app(store=store, cf=FakeCF(solved),
-                     lc=FakeLC(), hints=FakeHints(), rating_model=FakeRatingModel(), code_runner_enabled=True)
+    app = create_app(store=store, cf=FakeCF(solved), lc=FakeLC(), hints=FakeHints(), rating_model=FakeRatingModel(),
+                     code_runner_enabled=True, statements=FakeStatements({"2/A": "Statement from the database."}))
     with TestClient(app) as c:
+        c.app.state.statement_sync_done.wait(5)
         yield c

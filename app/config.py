@@ -24,3 +24,9 @@ LC_RATING_OFFSET = int(os.getenv("LC_RATING_OFFSET", "600"))
 
 # Set to 1 in tests and CI: never call Codeforces at startup, only use files in DATA_DIR.
 OFFLINE = os.getenv("CCCOACH_OFFLINE", "0") == "1"
+
+# Optional Postgres (e.g. Supabase) holding Codeforces statements: CFSeer's scraped `problems` table
+# plus statements users paste in. Without it, pasted statements go to data/user_statements.json.
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+# How often the statements are re-read from the database (new scrapes / pastes from other servers).
+STATEMENT_REFRESH_HOURS = float(os.getenv("STATEMENT_REFRESH_HOURS", "6"))
