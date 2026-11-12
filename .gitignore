@@ -1,0 +1,12 @@
+# secrets
+.env
+
+# downloaded / scraped data (rebuilt by scripts/)
+data/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/

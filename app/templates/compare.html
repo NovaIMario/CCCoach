@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Compare · CPCoach{% endblock %}
+{% block content %}
+<h1>Compare two Codeforces users</h1>
+<form class="card form inline" action="/compare" method="get">
+  <input name="a" value="{{ a }}" placeholder="First handle" autocomplete="off">
+  <input name="b" value="{{ b }}" placeholder="Second handle" autocomplete="off">
+  <button type="submit">Compare</button>
+</form>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% if pa and pb %}
+<div class="card">
+  <table class="table compare">
+    <thead><tr><th></th><th>{{ pa.handle }}</th><th>{{ pb.handle }}</th></tr></thead>
+    <tbody>
+    {% for key, label in [("current","Current rating"),("peak","Peak rating"),("contests","Contests"),("avg_change","Avg change"),("best_gain","Best gain")] %}
+      <tr>
+        <td>{{ label }}</td>
+        <td class="{% if winner[key] == 'a' %}win{% endif %}">{{ pa.stats[key] if pa.stats[key] is not none else "–" }}</td>
+        <td class="{% if winner[key] == 'b' %}win{% endif %}">{{ pb.stats[key] if pb.stats[key] is not none else "–" }}</td>
+      </tr>
+    {% endfor %}
+      <tr><td>Solved</td><td>{{ pa.solved_count }}</td><td>{{ pb.solved_count }}</td></tr>
+      <tr><td>Weakest tags</td>
+        <td>{{ pa.tags[:3]|map(attribute="tag")|join(", ") }}</td>
+        <td>{{ pb.tags[:3]|map(attribute="tag")|join(", ") }}</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="card"><h3>Rating history</h3><canvas id="history"></canvas></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if pa and pb %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const COMPARE = [
+    {label: {{ pa.handle|tojson }}, data: {{ pa.history|tojson }}},
+    {label: {{ pb.handle|tojson }}, data: {{ pb.history|tojson }}},
+  ];
+</script>
+<script src="/static/charts.js"></script>
+{% endif %}
+{% endblock %}

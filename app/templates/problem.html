@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ p.contest_id }}{{ p.index }} {{ p.name }} · CPCoach{% endblock %}
+{% block head %}
+<script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="workspace">
+  <section class="card statement">
+    <h1>{{ p.contest_id }}{{ p.index }}. {{ p.name }}</h1>
+    <p>
+      {% if rating %}<span class="pill">{{ rating }}{% if p.rating is none %} (predicted){% endif %}</span>{% endif %}
+      {% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+    </p>
+    <p class="muted small">{{ p.contest_name }} · solved by {{ p.solved_count }}</p>
+    {% if statement %}
+      <div id="statement-text" class="statement-text">{{ statement }}</div>
+    {% else %}
+      <p class="muted">No local copy of this statement.</p>
+    {% endif %}
+    <p><a href="https://codeforces.com/contest/{{ p.contest_id }}/problem/{{ p.index }}" target="_blank" rel="noopener">Open on Codeforces (full statement, examples, submit) &rarr;</a></p>
+  </section>
+
+  <section class="card editor-pane">
+    <div class="toolbar">
+      <select id="lang">{% for l in languages %}<option value="{{ l }}">{{ "C++17" if l == "cpp" else "Python 3" }}</option>{% endfor %}</select>
+      <button id="run" {% if not runner_on %}disabled title="Code execution is off on this server"{% endif %}>Run</button>
+    </div>
+    <div id="editor"></div>
+    <div class="io">
+      <label>Input<textarea id="stdin" rows="5"></textarea></label>
+      <label>Output <span id="status" class="muted small"></span><pre id="stdout"></pre></label>
+    </div>
+  </section>
+
+  <section class="card ai-pane">
+    <h3>AI coach</h3>
+    {% if hints_on %}
+    <div class="toolbar">
+      <button data-mode="hint">Hint</button>
+      <button data-mode="review">Review my code</button>
+      <button data-mode="solution" class="secondary">Show solution</button>
+    </div>
+    <div id="ai-out" class="ai-out muted">Ask for a hint when you're stuck.</div>
+    {% else %}
+    <p class="muted">AI hints are off. Set <code>GEMINI_API_KEY</code> in <code>.env</code> to turn them on.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>const PROBLEM = {contest_id: {{ p.contest_id }}, index: {{ p.index|tojson }}};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script src="/static/problem.js"></script>
+{% endblock %}

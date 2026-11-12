@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Problems · CPCoach{% endblock %}
+{% block content %}
+<h1>Problems</h1>
+<div class="card form search">
+  <div class="field">
+    <input id="name" placeholder="Problem name (Trie autocomplete)" autocomplete="off">
+    <div id="name-dropdown" class="dropdown"></div>
+  </div>
+  <select id="tag">
+    <option value="">Any tag</option>
+    {% for t in tags %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+  </select>
+  <input id="min" type="number" step="100" placeholder="Min rating">
+  <input id="max" type="number" step="100" placeholder="Max rating">
+  <button id="go">Search</button>
+</div>
+<p id="count" class="muted"></p>
+<div id="results" class="cards"></div>
+<div class="pager"><button id="prev">Prev</button><button id="next">Next</button></div>
+{% endblock %}
+{% block scripts %}
+<script>const NAMES = {{ names|tojson }};</script>
+<script src="/static/trie.js"></script>
+<script src="/static/problems.js"></script>
+{% endblock %}

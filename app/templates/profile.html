@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ cf_handle or lc_user or "Profile" }} · CPCoach{% endblock %}
+{% block content %}
+<form class="card form inline" action="/profile" method="get">
+  <input name="cf" value="{{ cf_handle }}" placeholder="Codeforces handle" autocomplete="off">
+  <input name="lc" value="{{ lc_user }}" placeholder="LeetCode username (optional)" autocomplete="off">
+  <button type="submit">Analyse</button>
+</form>
+
+{% if cf_error %}<p class="error">{{ cf_error }}</p>{% endif %}
+{% if lc_error %}<p class="error">LeetCode: {{ lc_error }}</p>{% endif %}
+
+{% if cf %}
+<h1>{{ cf.handle }} <span class="pill">{{ cf.rank }}</span></h1>
+<div class="stats">
+  <div class="stat"><b>{{ cf.stats.current or "–" }}</b><span>Current</span></div>
+  <div class="stat"><b>{{ cf.stats.peak or "–" }}</b><span>Peak</span></div>
+  <div class="stat"><b>{{ cf.stats.contests }}</b><span>Contests</span></div>
+  <div class="stat"><b>{{ cf.solved_count }}</b><span>Solved</span></div>
+  <div class="stat"><b>{{ "%+d"|format(cf.stats.best_gain) }}</b><span>Best gain</span></div>
+</div>
+{% endif %}
+
+{% if lc %}
+<h2>LeetCode · {{ lc.username }} {% if lc.badge %}<span class="pill">{{ lc.badge }}</span>{% endif %}</h2>
+<div class="stats">
+  <div class="stat"><b>{{ lc.contest_rating or "–" }}</b><span>Contest rating</span></div>
+  <div class="stat"><b>{% if lc.top_percentage %}top {{ lc.top_percentage }}%{% else %}–{% endif %}</b><span>Global</span></div>
+  <div class="stat"><b>{{ lc.solved_total }}</b><span>Solved</span></div>
+  <div class="stat"><b>{{ lc.solved.Easy }} / {{ lc.solved.Medium }} / {{ lc.solved.Hard }}</b><span>Easy / Med / Hard</span></div>
+</div>
+{% endif %}
+
+{% if cf %}
+<div class="grid2">
+  <div class="card"><h3>Rating history</h3><canvas id="history"></canvas></div>
+  <div class="card"><h3>Solved problems by rating</h3><canvas id="solvedHist"></canvas></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Tags at your level <span class="muted">(around {{ cf.level }})</span></h3>
+    <p class="muted small">"Expected" is how common the tag is among problems near your level; "yours" is its share of what you solved. Weakest first.</p>
+    <table class="table">
+      <thead><tr><th>Tag</th><th>Solved</th><th>Yours</th><th>Expected</th><th>Hardest</th></tr></thead>
+      <tbody>
+      {% for t in cf.tags %}
+        <tr class="{% if loop.index <= 5 %}weak{% endif %}">
+          <td>{{ t.tag }}</td><td>{{ t.solved }}</td>
+          <td>{{ (t.your_share * 100)|round(1) }}%</td><td>{{ (t.expected_share * 100)|round(1) }}%</td>
+          <td>{{ t.hardest_solved or "–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Recommended next</h3>
+    {% if recs %}
+    <ul class="recs">
+      {% for p in recs %}
+      <li>
+        <a href="/problem/{{ p.contest_id }}/{{ p.index }}">{{ p.contest_id }}{{ p.index }} · {{ p.name }}</a>
+        <span class="muted small">{{ p.reason }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">No recommendations yet.</p>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if cf %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const HISTORY = {{ cf.history|tojson }};
+  const SOLVED = {{ cf.solved_histogram|tojson }};
+</script>
+<script src="/static/charts.js"></script>
+{% endif %}
+{% endblock %}

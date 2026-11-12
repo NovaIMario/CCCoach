@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Train smarter, not just more.</h1>
+  <p class="muted">CPCoach reads your Codeforces and LeetCode history, finds the topics you under-practise for your level,
+    and picks the next problems to solve. Then you can solve them right here, with an editor and AI hints.</p>
+  <form class="card form" action="/profile" method="get">
+    <label>Codeforces handle <input name="cf" placeholder="e.g. tourist" autocomplete="off"></label>
+    <label>LeetCode username <span class="muted">(optional)</span> <input name="lc" placeholder="e.g. ep168rst" autocomplete="off"></label>
+    <button type="submit">Analyse</button>
+  </form>
+</section>
+
+<section class="grid3">
+  <div class="card"><h3>Weak-tag analysis</h3><p class="muted">Compares the tags you solve with how common each tag is around your rating.</p></div>
+  <div class="card"><h3>Recommendations</h3><p class="muted">Unsolved problems in your weakest tags, 0&ndash;300 above your level.</p></div>
+  <div class="card"><h3>Rating &amp; tag models</h3><p class="muted">Predicts ratings for new problems and tags from a statement.</p></div>
+</section>
+{% endblock %}
