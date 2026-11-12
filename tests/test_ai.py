@@ -50,3 +50,18 @@ def test_other_errors_are_not_hidden():
     with pytest.raises(APIError):
         h.ask("hint", "P", "", "")
     assert models.calls == ["main"]
+
+
+def test_chat_sends_message_and_recent_history_only():
+    from app.ai import CHAT_RULES, MAX_HISTORY, build_prompt
+    history = [{"role": "user" if i % 2 == 0 else "coach", "text": f"turn {i}"} for i in range(MAX_HISTORY + 4)]
+    prompt = build_prompt("chat", "P", "stmt", "code", "why TLE?", history)
+    assert "why TLE?" in prompt and CHAT_RULES in prompt
+    assert "turn 0" not in prompt and f"turn {MAX_HISTORY + 3}" in prompt  # oldest turns dropped
+
+
+def test_chat_needs_a_message():
+    h, models = service({"main": "hi", "backup": "x", "last": "x"})
+    with pytest.raises(ValueError):
+        h.ask("chat", "P", "", "", message="   ")
+    assert h.ask("chat", "P", "", "", message="help") == "hi"

@@ -96,3 +96,12 @@ def test_hint_modes(client):
 
 def test_leetcode(client):
     assert client.get("/api/leetcode/bob").json()["contest_rating"] == 1800
+
+
+def test_hint_chat_mode(client):
+    r = client.post("/api/hint", json={"mode": "chat", "contest_id": 1, "index": "A", "message": "why WA?",
+                                       "history": [{"role": "user", "text": "hi"}, {"role": "coach", "text": "hello"}]})
+    assert r.json()["response"] == "chat for Problem 1A: why WA? (2 earlier)"
+    bad_role = {"mode": "chat", "contest_id": 1, "index": "A", "message": "x", "history": [{"role": "system", "text": "x"}]}
+    assert client.post("/api/hint", json=bad_role).status_code == 422
+    assert client.post("/api/hint", json={"mode": "chat", "contest_id": 1, "index": "A", "message": "x" * 2001}).status_code == 422

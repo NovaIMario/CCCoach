@@ -1,12 +1,19 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} · CCCoach{% endblock %}
+{% block body_class %}ide-page{% endblock %}
+{% block main_class %}ide{% endblock %}
 {% block head %}
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
 {% endblock %}
 {% block content %}
-<div class="workspace">
-  <section class="card statement">
+{# VS Code-style workspace: three panels side by side. Drag the dividers to resize;
+   click a panel's title bar (or its folded strip) to collapse / expand it. #}
+<section class="ide-panel" id="panel-problem" data-grow="1">
+  <header class="ide-head" data-toggle>
+    <span class="chev" aria-hidden="true">&#9662;</span><span class="ide-title">Problem</span>
+  </header>
+  <div class="ide-body statement">
     <h1>{{ title }}</h1>
     <p>
       {% if rating %}<span class="pill" title="{% if is_lc %}LeetCode rating {{ p.lc_rating }}, converted to the Codeforces scale{% endif %}">
@@ -24,34 +31,57 @@
       <p class="muted">No local copy of this statement.</p>
     {% endif %}
     <p><a href="{{ ext_url }}" target="_blank" rel="noopener">Open on {{ "LeetCode" if is_lc else "Codeforces" }} (full statement, examples, submit) &rarr;</a></p>
-  </section>
+  </div>
+</section>
 
-  <section class="card editor-pane">
-    <div class="toolbar">
-      <select id="lang">{% for l in languages %}<option value="{{ l }}">{{ "C++17" if l == "cpp" else "Python 3" }}</option>{% endfor %}</select>
-      <button id="run" {% if not runner_on %}disabled title="Code execution is off on this server"{% endif %}>Run</button>
-    </div>
+<div class="gutter" data-between="panel-problem panel-editor" role="separator" aria-orientation="vertical"></div>
+
+<section class="ide-panel" id="panel-editor" data-grow="1.3">
+  <header class="ide-head" data-toggle>
+    <span class="chev" aria-hidden="true">&#9662;</span><span class="ide-title">Editor</span>
+    <span class="ide-actions">
+      <select id="lang" aria-label="Language">{% for l in languages %}<option value="{{ l }}">{{ "C++17" if l == "cpp" else "Python 3" }}</option>{% endfor %}</select>
+      <button id="run" class="sm" {% if not runner_on %}disabled title="Code execution is off on this server"{% endif %}>&#9654; Run</button>
+    </span>
+  </header>
+  <div class="ide-body editor-body">
     <div id="editor"></div>
     <div class="io">
-      <label><span class="label-head">Input</span><textarea id="stdin" rows="5"></textarea></label>
+      <label><span class="label-head">Input</span><textarea id="stdin" spellcheck="false"></textarea></label>
       <label><span class="label-head">Output <span id="status" class="muted small"></span></span><pre id="stdout"></pre></label>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="card ai-pane">
-    <h3>AI coach</h3>
+<div class="gutter" data-between="panel-editor panel-ai" role="separator" aria-orientation="vertical"></div>
+
+<section class="ide-panel" id="panel-ai" data-grow="0.8">
+  <header class="ide-head" data-toggle>
+    <span class="chev" aria-hidden="true">&#9662;</span><span class="ide-title">AI coach</span>
+    {% if hints_on %}<span class="ide-actions"><button id="chat-clear" class="sm ghost" title="Clear the conversation">Clear</button></span>{% endif %}
+  </header>
+  <div class="ide-body chat-body">
     {% if hints_on %}
-    <div class="toolbar">
-      <button data-mode="hint">Hint</button>
-      <button data-mode="review">Review my code</button>
-      <button data-mode="solution" class="secondary">Show solution</button>
+    <div id="chat-log" class="chat-log" aria-live="polite">
+      <div class="chat-welcome muted">Ask anything about this problem, or use a quick action below.
+        The coach sees the statement and your current code.</div>
     </div>
-    <div id="ai-out" class="ai-out muted">Ask for a hint when you're stuck.</div>
+    <form id="chat-form" class="chat-form">
+      <div class="chat-quick">
+        <button type="button" class="sm ghost" data-mode="hint">Hint</button>
+        <button type="button" class="sm ghost" data-mode="review">Review my code</button>
+        <button type="button" class="sm ghost" data-mode="solution">Solution</button>
+      </div>
+      <div class="chat-input">
+        <textarea id="chat-input" rows="2" maxlength="2000" placeholder="Ask about this problem... (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button type="submit" id="chat-send" class="sm">Send</button>
+      </div>
+    </form>
     {% else %}
-    <p class="muted">AI hints are off. Set <code>GEMINI_API_KEY</code> in <code>.env</code> to turn them on.</p>
+    <p class="muted chat-off">AI hints are off. Set <code>GEMINI_API_KEY</code> in <code>.env</code> to turn them on.</p>
     {% endif %}
-  </section>
-</div>
+  </div>
+</section>
 {% endblock %}
 {% block scripts %}
 <script>const PROBLEM = {{ js_problem|tojson }};</script>

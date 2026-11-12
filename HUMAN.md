@@ -8,7 +8,7 @@ This file explains the project so you can find your way around, explain it in an
             Codeforces API        LeetCode GraphQL        Gemini API
                   │                      │                     │
           codeforces.py            leetcode.py              ai.py
-       (cache + rate limit)        (cache)            (fixed prompts, rate limit)
+       (cache + rate limit)        (cache)            (scoped chat, rate limit)
                   │                      │                     │
    problems.py ◄──┤                      │                     │
  (ProblemStore:   │                      │                     │
@@ -100,23 +100,32 @@ or turn the runner off with `ENABLE_CODE_RUNNER=0`.
 
 ## AI hints (`ai.py`)
 
-Three fixed modes: `hint` (one nudge, no code), `review` (bugs in your code), `solution` (full explanation + C++).
+Three quick actions with fixed prompts: `hint` (one nudge, no code), `review` (bugs in your code), `solution`
+(full explanation + C++), plus a `chat` mode for free-text questions (AlgoReady-style conversation).
 Gemini models are often overloaded (503) or hang until a 504, so each model gets 25s and then the next model in
 `FALLBACK_MODELS` is tried (the Flash-Lite models are rarely busy). A 404 (model retired for this key) also moves on.
-The prompt includes the statement (if available) and your editor contents. There is no free-text mode, so the
-server's API key can't be used as a general chatbot. 10 requests/minute per IP.
+The prompt includes the statement (if available), your editor contents and the last 10 turns of the conversation.
+Chat is scoped so the server's API key can't be used as a general chatbot: the prompt (`CHAT_RULES`) pins the model
+to this problem and tells it to steer off-topic requests back, messages are capped at 2,000 characters, earlier turns
+at 3,000 each, roles must be `user`/`coach` (validated by Pydantic), and there are 10 requests/minute per IP.
+It's a guard, not a guarantee: a determined user can still sometimes talk a model off-topic, but only within those limits.
 
 ## Frontend (`app/static`)
 
 - `trie.js` — the AlgoReady Trie, improved: inserts every word of a name (so "tree" finds "Game on Growing Tree"),
   and caps stored names per node at 50 so memory stays bounded.
 - `problems.js` — search page; builds DOM with `textContent` (never `innerHTML`) for data from Codeforces.
-- `problem.js` — Monaco editor (code saved per problem in `localStorage`), run button, AI buttons, MathJax for `$$$…$$$` maths.
+- `problem.js` — the solve page, laid out like VS Code: three panels (Problem | Editor | AI coach) side by side.
+  Drag the gutters to resize (double-click one to reset), click a title bar to fold a panel into a thin strip;
+  sizes and folded panels are saved in `localStorage`. Monaco editor (code saved per problem, Ctrl+Enter runs),
+  AI chat (conversation saved per problem). Coach replies go through a tiny Markdown renderer that HTML-escapes
+  everything *first*, so model output can't inject markup; `$…$` maths is typeset with MathJax, as is the statement's `$$$…$$$`.
+  On narrow screens the panels stack vertically.
 - `charts.js` — rating history and solved-rating histogram (Chart.js).
 
 ## Tests (`tests/`)
 
-48 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
+52 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
 then `create_app(...)` is given those fakes. Covered: stats, weak tags, recommendations, features, runner limits and
 secrets, every page renders, HTML escaping, API errors (unknown handle → 404, bad language → 400).
 CI (`.github/workflows/ci.yml`) runs the tests, then builds the Docker image and checks `/health`.

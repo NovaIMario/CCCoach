@@ -73,9 +73,11 @@ def lc_problems():
 class FakeHints:
     enabled = True
 
-    def ask(self, mode, name, statement, code):
-        if mode not in ("hint", "review", "solution"):
+    def ask(self, mode, name, statement, code, message="", history=None):
+        if mode not in ("hint", "review", "solution", "chat"):
             raise ValueError("bad mode")
+        if mode == "chat":
+            return f"chat for {name}: {message} ({len(history or [])} earlier)"
         return f"{mode} for {name}"
 
 

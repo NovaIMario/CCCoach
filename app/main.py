@@ -31,12 +31,19 @@ class RunRequest(BaseModel):
     stdin: str = Field("", max_length=1_000_000)
 
 
+class ChatTurn(BaseModel):
+    role: str = Field(pattern="^(user|coach)$")
+    text: str = Field(max_length=20_000)
+
+
 class HintRequest(BaseModel):
-    mode: str
+    mode: str                       # hint | review | solution | chat
     contest_id: int | None = None   # Codeforces problem ...
     index: str | None = None
     slug: str | None = None         # ... or LeetCode problem
     code: str = Field("", max_length=100_000)
+    message: str = Field("", max_length=2_000)            # chat mode only
+    history: list[ChatTurn] = Field([], max_length=40)    # earlier turns; the service keeps the last 10
 
 
 class TagRequest(BaseModel):
@@ -282,7 +289,8 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         if not app.state.limiter.allow(f"hint:{request.client.host if request.client else '?'}"):
             raise HTTPException(429, "Too many requests, wait a minute")
         try:
-            text = app.state.hints.ask(req.mode, p["name"], statement, req.code)
+            text = app.state.hints.ask(req.mode, p["name"], statement, req.code,
+                                       message=req.message, history=[h.model_dump() for h in req.history])
         except ValueError as e:
             raise HTTPException(400, str(e))
         except AIUnavailable as e:

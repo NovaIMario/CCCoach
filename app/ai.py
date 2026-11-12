@@ -1,8 +1,10 @@
 """AI hints through the Gemini API.
 
-Only fixed prompt types are allowed (hint / review / solution). The old AlgoReady
-"custom question" mode forwarded any text to Gemini, which let anyone use the
-server's API key as a free chatbot.
+Quick actions (hint / review / solution) use fixed prompts. Free-text chat is allowed too,
+but it is scoped: the prompt pins the model to the current problem and to programming
+help, messages and history are length-capped, and the endpoint is rate limited. (The old
+AlgoReady "custom question" mode forwarded any text unscoped, which let anyone use the
+server's API key as a free general chatbot.)
 
 Gemini models sometimes return 503 ("high demand") or 429 (rate limited). When that
 happens we try the next model in a fallback list instead of failing.
@@ -51,14 +53,42 @@ class RateLimiter:
         return True
 
 
-def build_prompt(mode: str, problem_name: str, statement: str, code: str) -> str:
-    return (
-        "You are a competitive programming coach.\n"
-        f"Problem: {problem_name}\n\n"
-        f"Statement:\n{statement[:6000] or '(not available)'}\n\n"
-        f"User's current code:\n{code[:8000] or '(empty)'}\n\n"
-        f"Task: {PROMPTS[mode]}"
-    )
+CHAT_RULES = (
+    "Answer the user's latest message. Only help with this problem, its algorithms, the user's code "
+    "and closely related programming topics; if asked about anything else, briefly decline in your own "
+    "words and steer back to the problem. Unless the user explicitly asks for the full solution, guide "
+    "them with hints and questions rather than giving it away. Be concise; use Markdown, and $...$ for maths."
+)
+MAX_MESSAGE = 2000        # characters in the user's chat message
+MAX_HISTORY = 10          # earlier turns sent back to the model
+MAX_HISTORY_CHARS = 3000  # per earlier turn
+
+
+def format_history(history: list[dict] | None) -> str:
+    lines = []
+    for turn in (history or [])[-MAX_HISTORY:]:
+        who = "User" if turn.get("role") == "user" else "Coach"
+        lines.append(f"{who}: {str(turn.get('text', ''))[:MAX_HISTORY_CHARS]}")
+    return "\n\n".join(lines)
+
+
+def build_prompt(mode: str, problem_name: str, statement: str, code: str,
+                 message: str = "", history: list[dict] | None = None) -> str:
+    parts = [
+        "You are a competitive programming coach.",
+        f"Problem: {problem_name}",
+        f"Statement:\n{statement[:6000] or '(not available)'}",
+        f"User's current code:\n{code[:8000] or '(empty)'}",
+    ]
+    convo = format_history(history)
+    if convo:
+        parts.append(f"Conversation so far:\n{convo}")
+    if mode == "chat":
+        parts.append(f"Task: {CHAT_RULES}")
+        parts.append(f"User's latest message:\n{message[:MAX_MESSAGE]}")
+    else:
+        parts.append(f"Task: {PROMPTS[mode]}")
+    return "\n\n".join(parts)
 
 
 def status_code(err: Exception) -> int | None:
@@ -80,12 +110,15 @@ class HintService:
     def enabled(self) -> bool:
         return self.client is not None
 
-    def ask(self, mode: str, problem_name: str, statement: str, code: str) -> str:
-        if mode not in PROMPTS:
+    def ask(self, mode: str, problem_name: str, statement: str, code: str,
+            message: str = "", history: list[dict] | None = None) -> str:
+        if mode not in PROMPTS and mode != "chat":
             raise ValueError(f"Unknown mode: {mode}")
+        if mode == "chat" and not message.strip():
+            raise ValueError("Type a message first")
         if not self.enabled:
             return "AI hints are off: set GEMINI_API_KEY in .env to turn them on."
-        prompt = build_prompt(mode, problem_name, statement, code)
+        prompt = build_prompt(mode, problem_name, statement, code, message, history)
         for model in self.models:
             try:
                 resp = self.client.models.generate_content(model=model, contents=prompt)

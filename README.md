@@ -2,7 +2,7 @@
 
 A training coach for competitive programmers. It reads your **Codeforces** and **LeetCode** history,
 finds the topics you under-practise for your rating, recommends the next problems to solve, and lets you
-solve them in the browser with a code editor, a code runner and AI hints.
+solve them in the browser with a code editor, a code runner and an AI coach you can chat with.
 
 **Live:** https://cccoach.onrender.com (free tier, so the first load after a quiet spell takes ~30s)
 
@@ -43,7 +43,8 @@ What made the difference:
   converted as CF ≈ LC − 600 (configurable with `LC_RATING_OFFSET`); unrated ones get the median rating of their
   difficulty. LeetCode tags are mapped to Codeforces tags, and your LeetCode per-tag solve counts feed the weak-tag analysis.
 - **Problem search** — Trie autocomplete on any word of the name, filter by tag and rating (predicted ratings for unrated problems).
-- **Solve page** — statement with maths, Monaco editor (C++17 / Python 3), run against custom input, AI hint / code review / solution.
+- **Solve page** — VS Code-style resizable, collapsible panels: statement with maths | Monaco editor (C++17 / Python 3) with a
+  code runner | AI coach chat (ask anything about the problem, or one-click hint / code review / solution).
   When a Gemini model is overloaded, the coach falls back to lighter models instead of failing.
 - **Compare** — two Codeforces users side by side.
 - **Models page** — metrics and a live tag predictor.
