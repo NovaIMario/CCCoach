@@ -183,7 +183,8 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
             "level": level,
             "tags": tags,
             "includes_lc": bool(lcd),
-            "cf_recs": recommend(st.store.problems, cf_solved, weak, level, n=n),
+            # recommend only problems you can actually read here (stats above still use every problem)
+            "cf_recs": recommend(st.store.with_statements(st.store.problems), cf_solved, weak, level, n=n),
             "lc_recs": recommend(st.store.lc_problems, lc_solved, weak, level, n=n),
         }
 
@@ -266,7 +267,8 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
     def problems_page(request: Request):
         store = app.state.store
         return page(request, "problems.html", tags=store.tags,
-                    names={"cf": [p["name"] for p in store.problems], "lc": [p["name"] for p in store.lc_problems]})
+                    names={"cf": [p["name"] for p in store.with_statements(store.problems)],
+                           "lc": [p["name"] for p in store.lc_problems]})
 
     def problem_view(request: Request, p: dict, statement: str):
         is_lc = p.get("platform") == "lc"

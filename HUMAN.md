@@ -75,6 +75,11 @@ around it. So statements come from three places, merged into the problem store's
 
 `scripts/upload_statements.py` copies `data/statements.json` into a fresh database (safe to re-run).
 
+Codeforces problems **without** a statement are hidden from the Problems search, its autocomplete and the
+recommendations (`ProblemStore.has_statement`), so every problem you're offered can be read and coached.
+They still count in your stats and weak-tag analysis, and a direct link still opens them with the paste box;
+once pasted they show up everywhere. LeetCode lists only free problems, whose statements LeetCode always serves.
+
 ## LeetCode (`lc_problems.py`, `leetcode.py`)
 
 - **Problems:** on startup, LeetCode's GraphQL `questionList` (all problems, tags, Premium flag) and zerotrac's ratings
@@ -145,7 +150,7 @@ It's a guard, not a guarantee: a determined user can still sometimes talk a mode
 
 ## Tests (`tests/`)
 
-59 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
+64 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
 then `create_app(...)` is given those fakes. Covered: stats, weak tags, recommendations, features, runner limits and
 secrets, every page renders, HTML escaping, API errors (unknown handle → 404, bad language → 400).
 CI (`.github/workflows/ci.yml`) runs the tests, then builds the Docker image and checks `/health`.

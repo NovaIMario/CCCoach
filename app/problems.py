@@ -99,12 +99,27 @@ class ProblemStore:
     def statement(self, contest_id: int, index: str) -> str | None:
         return self.statements.get(f"{contest_id}/{index.upper()}")
 
+    def has_statement(self, p: dict) -> bool:
+        """Can we show this problem's statement? LeetCode: always (Premium problems are never in the
+        list and LeetCode serves the rest live). Codeforces: only if we hold its text. Until the first
+        statement sync has finished (no statements at all yet) everything counts, so lists aren't
+        empty for the few seconds after startup."""
+        if p.get("platform") == "lc" or not self.statements:
+            return True
+        return f"{p['contest_id']}/{p['index'].upper()}" in self.statements
+
+    def with_statements(self, problems: list[dict]) -> list[dict]:
+        return [p for p in problems if self.has_statement(p)]
+
     def search(self, name: str = "", tag: str = "", min_rating: int | None = None,
                max_rating: int | None = None, limit: int = 200, platform: str = "cf") -> list[dict]:
+        """Problems you can open and read: Codeforces problems without a statement are left out."""
         name = name.lower().strip()
         pool = {"cf": self.problems, "lc": self.lc_problems}.get(platform, self.problems + self.lc_problems)
         out = []
         for p in pool:
+            if not self.has_statement(p):
+                continue
             r = effective_rating(p)
             if name and name not in p["name"].lower():
                 continue

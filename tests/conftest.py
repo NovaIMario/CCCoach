@@ -112,7 +112,11 @@ class FakeRatingModel:
 def client(problems, lc_problems):
     # the user has solved lots of greedy/math/implementation but no dp or graphs
     solved = [(c, i) for c in range(1, 41) for i in ("A", "B")]
-    store = ProblemStore(problems, {"1/A": "Read $$$n$$$ and print it."}, lc_problems)
+    # Like production: most Codeforces problems have a statement, a few (contests 3 and 4) don't.
+    statements = {f"{p['contest_id']}/{p['index']}": f"Statement of {p['name']}." for p in problems
+                  if p["contest_id"] not in (2, 3, 4)}   # 2/A comes from the fake database below
+    statements["1/A"] = "Read $$$n$$$ and print it."
+    store = ProblemStore(problems, statements, lc_problems)
     app = create_app(store=store, cf=FakeCF(solved), lc=FakeLC(), hints=FakeHints(), rating_model=FakeRatingModel(),
                      code_runner_enabled=True, statements=FakeStatements({"2/A": "Statement from the database."}))
     with TestClient(app) as c:

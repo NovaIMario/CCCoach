@@ -61,7 +61,7 @@ def test_local_backend_round_trip(tmp_path):
 
 def test_health_reports_statement_source(client):
     h = client.get("/health").json()
-    assert h["statements"] == 2 and h["statement_source"] == "FakeStatements" and h["statement_sync_error"] is None
+    assert h["statements"] == len(client.app.state.store.statements) and h["statement_source"] == "FakeStatements" and h["statement_sync_error"] is None
 
 
 def test_short_error_hides_passwords():
@@ -76,3 +76,24 @@ def test_database_url_paste_slips_are_forgiven():
     for raw in (url, f"DATABASE_URL={url}", f'DATABASE_URL="{url}"', f"  '{url}'  "):
         assert _clean_url(raw) == url
     assert _clean_url("") == ""
+
+
+def test_problems_without_statement_are_hidden_from_lists(client):
+    hidden = lambda ps: [p for p in ps if p.get("platform") != "lc" and p["contest_id"] in (3, 4)]
+    found = client.get("/api/problems", params={"limit": 1000}).json()
+    assert found and not hidden(found)
+    assert any(p["contest_id"] == 2 for p in found)        # statement came from the database
+    everything = client.get("/api/problems", params={"limit": 1000, "platform": "all"}).json()
+    assert any(p.get("platform") == "lc" for p in everything) and not hidden(everything)
+    recs = client.get("/api/recommend/tester").json()["codeforces"]
+    assert recs and not hidden(recs)
+    page = client.get("/problems").text
+    assert "Problem 3C" not in page and "Problem 5A" in page   # autocomplete names
+
+
+def test_hidden_problem_still_opens_by_direct_link_and_appears_once_pasted(client):
+    from tests.test_statements import STATEMENT
+    assert client.get("/problem/3/C").status_code == 200       # paste box, as before
+    client.post("/api/statement", json={"contest_id": 3, "index": "C", "statement": STATEMENT})
+    found = client.get("/api/problems", params={"name": "Problem 3C"}).json()
+    assert [p["index"] for p in found] == ["C"]
