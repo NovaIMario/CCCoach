@@ -68,3 +68,11 @@ def test_short_error_hides_passwords():
     from app.main import short_error
     msg = short_error(Exception("could not connect postgresql://postgres.abc:s3cret@host:5432/db\nmore"))
     assert "s3cret" not in msg and "postgres.abc:***@host" in msg
+
+
+def test_database_url_paste_slips_are_forgiven():
+    from app.config import _clean_url
+    url = "postgresql://u:p@host:5432/db"
+    for raw in (url, f"DATABASE_URL={url}", f'DATABASE_URL="{url}"', f"  '{url}'  "):
+        assert _clean_url(raw) == url
+    assert _clean_url("") == ""

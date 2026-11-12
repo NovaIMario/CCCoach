@@ -27,6 +27,15 @@ OFFLINE = os.getenv("CCCOACH_OFFLINE", "0") == "1"
 
 # Optional Postgres (e.g. Supabase) holding Codeforces statements: CFSeer's scraped `problems` table
 # plus statements users paste in. Without it, pasted statements go to data/user_statements.json.
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+def _clean_url(value: str) -> str:
+    """Forgive a common copy-paste slip in hosting dashboards: pasting the whole .env line
+    (`DATABASE_URL=postgresql://...`) or quotes as the value."""
+    value = value.strip().strip('"').strip("'")
+    if value.upper().startswith("DATABASE_URL="):
+        value = value.split("=", 1)[1].strip().strip('"').strip("'")
+    return value
+
+
+DATABASE_URL = _clean_url(os.getenv("DATABASE_URL", ""))
 # How often the statements are re-read from the database (new scrapes / pastes from other servers).
 STATEMENT_REFRESH_HOURS = float(os.getenv("STATEMENT_REFRESH_HOURS", "6"))
