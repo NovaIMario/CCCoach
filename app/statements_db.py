@@ -19,7 +19,8 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-log = logging.getLogger(__name__)
+# A child of uvicorn's logger, so messages show up in the server output (and in Render's logs).
+log = logging.getLogger("uvicorn.error." + __name__)
 
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS cccoach_statements (
@@ -90,8 +91,12 @@ class PostgresStatements:
         if not self.has_cfseer_table:
             return ours
         cond = f"{where} AND statement IS NOT NULL" if where else "WHERE statement IS NOT NULL"
-        # CFSeer's scraped statement wins over a pasted one when both exist.
-        return f"SELECT contest_id, problem_index, statement FROM problems {cond} UNION ALL {ours}"
+        # CFSeer's scraped statement wins over a pasted one when both exist. CFSeer keeps the limits in
+        # their own columns ("time limit per test 2 seconds"); put them back in front of the text so the
+        # problem page's split_cf_header can show them as a header line, like for every other source.
+        cfseer = ("SELECT contest_id, problem_index, "
+                  "concat_ws(' ', time_limit, memory_limit, statement) FROM problems")
+        return f"{cfseer} {cond} UNION ALL {ours}"
 
     def load_all(self) -> dict[str, str]:
         out: dict[str, str] = {}

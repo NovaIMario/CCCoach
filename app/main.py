@@ -26,7 +26,8 @@ from .recommend import recommend
 from .runner import LANGUAGES, run_code
 from .statements_db import LocalStatements, clean_paste, open_backend
 
-log = logging.getLogger(__name__)
+# A child of uvicorn's logger, so messages show up in the server output (and in Render's logs).
+log = logging.getLogger("uvicorn.error." + __name__)
 
 HERE = Path(__file__).resolve().parent
 

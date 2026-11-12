@@ -13,7 +13,8 @@ import logging
 import time
 from collections import defaultdict, deque
 
-log = logging.getLogger(__name__)
+# A child of uvicorn's logger, so messages show up in the server output (and in Render's logs).
+log = logging.getLogger("uvicorn.error." + __name__)
 
 PROMPTS = {
     "hint": "Give ONE short hint (2-3 sentences) that points toward the key idea. "
