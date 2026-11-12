@@ -26,9 +26,41 @@ def test_unknown_handle_is_404(client):
 
 
 def test_recommendations_are_unsolved_weak_tag_problems(client):
-    recs = client.get("/api/recommend/alice").json()
-    assert recs
-    assert all(r["index"] in ("C", "D") for r in recs)
+    body = client.get("/api/recommend/alice").json()
+    assert body["codeforces"]
+    assert all(r["index"] in ("C", "D") for r in body["codeforces"])
+    # LeetCode picks train weak tags too: the weakest (dp) first, the less weak (greedy) after
+    lc = body["leetcode"]
+    assert [("dp" in r["tags"]) for r in lc] == [True] * 5 + [False]
+
+
+def test_lc_recommendations_skip_recently_solved(client):
+    lc = client.get("/api/recommend/alice", params={"lc": "bob"}).json()["leetcode"]
+    assert "lc-dp-1" not in {r["slug"] for r in lc}
+
+
+def test_lc_search_and_page(client):
+    res = client.get("/api/problems", params={"platform": "lc", "tag": "dp"}).json()
+    assert len(res) == 5 and all(p["platform"] == "lc" for p in res)
+    html = client.get("/lc/lc-dp-2").text
+    assert "Statement of lc-dp-2" in html and "leetcode.com/problems/lc-dp-2" in html
+    assert client.get("/lc/missing").status_code == 404
+
+
+def test_lc_only_profile_uses_lc_rating(client):
+    html = client.get("/profile?lc=bob").text
+    assert "around 1200" in html   # 1800 LeetCode - 600 offset
+    assert "Next on LeetCode" in html
+
+
+def test_unknown_lc_user_keeps_cf_profile(client):
+    html = client.get("/profile?cf=alice&lc=nobody").text
+    assert "not found" in html and "Next on Codeforces" in html
+
+
+def test_hint_for_lc_problem(client):
+    r = client.post("/api/hint", json={"mode": "hint", "slug": "lc-dp-1"})
+    assert r.json()["response"] == "hint for Lc Dp 1"
 
 
 def test_pages_render(client):

@@ -46,21 +46,48 @@ def user_level(stats: dict, solved: list[dict]) -> int:
     return rated[len(rated) // 2] if rated else 1200
 
 
+def lc_tag_counts(lc_profile: dict) -> Counter:
+    """LeetCode per-tag solve counts, mapped onto Codeforces tags.
+    (A problem with two LC tags that map to the same CF tag, e.g. DFS and BFS, counts twice:
+    an accepted approximation, since LeetCode doesn't publish the full solved list.)"""
+    from .lc_problems import LC_TO_CF_TAG
+    out = Counter()
+    for slug, n in lc_profile.get("tag_counts", {}).items():
+        if slug in LC_TO_CF_TAG:
+            out[LC_TO_CF_TAG[slug]] += n
+    return out
+
+
 def tag_profile(solved: list[dict], all_problems: list[dict], level: int, window: int = 300,
-                min_expected: int = 30) -> list[dict]:
+                min_expected: int = 30, extra_counts: Counter | None = None, extra_total: int = 0,
+                extra_tags: set[str] | None = None) -> list[dict]:
     """Per tag: how much of the user's work it is vs how common it is around their level.
-    Sorted weakest first."""
+    Sorted weakest first.
+
+    `extra_counts`/`extra_total` add practice from another platform (LeetCode). `extra_tags` is the
+    set of tags that platform can express: for other tags (e.g. "constructive algorithms", which
+    LeetCode has no tag for) only Codeforces solves are used, otherwise those tags would look weak
+    just because LeetCode can't label them.
+    """
     nearby = [p for p in all_problems if (r := effective_rating(p)) and abs(r - level) <= window]
     nearby_counts = Counter(t for p in nearby for t in p["tags"] if t not in IGNORED_TAGS)
     solved_counts = Counter(t for p in solved for t in p["tags"] if t not in IGNORED_TAGS)
-    n_nearby, n_solved = max(len(nearby), 1), max(len(solved), 1)
+    extra_counts = extra_counts or Counter()
+    if extra_tags is None:
+        extra_tags = set(extra_counts)
+    n_nearby = max(len(nearby), 1)
 
     out = []
     for tag, cnt in nearby_counts.items():
         if cnt < min_expected:
             continue  # too rare at this level to judge
         expected = cnt / n_nearby
-        actual = solved_counts.get(tag, 0) / n_solved
+        if tag in extra_tags:
+            solved_n, total = solved_counts.get(tag, 0) + extra_counts.get(tag, 0), len(solved) + extra_total
+        else:
+            solved_n, total = solved_counts.get(tag, 0), len(solved)
+        actual = solved_n / max(total, 1)
+        solved_counts[tag] = solved_n
         hardest = max((effective_rating(p) or 0 for p in solved if tag in p["tags"]), default=0)
         out.append({
             "tag": tag,

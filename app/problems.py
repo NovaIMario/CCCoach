@@ -47,6 +47,7 @@ def join(problemset: dict, contests: list[dict]) -> list[dict]:
             continue
         c = by_id.get(p["contestId"], {})
         out.append({
+            "platform": "cf",
             "contest_id": p["contestId"],
             "index": p["index"],
             "name": p["name"],
@@ -62,19 +63,27 @@ def join(problemset: dict, contests: list[dict]) -> list[dict]:
 
 
 class ProblemStore:
-    def __init__(self, problems: list[dict], statements: dict[str, str] | None = None):
+    """`problems` are Codeforces problems; `lc_problems` are LeetCode problems on the CF scale."""
+
+    def __init__(self, problems: list[dict], statements: dict[str, str] | None = None,
+                 lc_problems: list[dict] | None = None):
         self.problems = problems
         self.by_key = {(p["contest_id"], p["index"]): p for p in problems}
         self.statements = statements or {}
+        self.lc_problems = lc_problems or []
+        self.lc_by_slug = {p["slug"]: p for p in self.lc_problems}
         self.tags = sorted({t for p in problems for t in p["tags"]})
 
     @classmethod
-    def load(cls, data_dir: Path, client: CodeforcesClient | None, max_age_hours: float) -> "ProblemStore":
+    def load(cls, data_dir: Path, client: CodeforcesClient | None, max_age_hours: float,
+             lc_http=None, lc_offset: int = 600) -> "ProblemStore":
+        from . import lc_problems
         problemset, contests = load_raw(data_dir, client, max_age_hours)
         statements = {}
         if (data_dir / "statements.json").exists():
             statements = _read_json(data_dir / "statements.json")
-        return cls(join(problemset, contests), statements)
+        lc = lc_problems.load(data_dir, lc_http, max_age_hours, lc_offset)
+        return cls(join(problemset, contests), statements, lc)
 
     def fill_predicted_ratings(self, rating_model) -> int:
         """Predict a rating for every unrated problem that has been solved at least once."""
@@ -90,10 +99,11 @@ class ProblemStore:
         return self.statements.get(f"{contest_id}/{index.upper()}")
 
     def search(self, name: str = "", tag: str = "", min_rating: int | None = None,
-               max_rating: int | None = None, limit: int = 200) -> list[dict]:
+               max_rating: int | None = None, limit: int = 200, platform: str = "cf") -> list[dict]:
         name = name.lower().strip()
+        pool = {"cf": self.problems, "lc": self.lc_problems}.get(platform, self.problems + self.lc_problems)
         out = []
-        for p in self.problems:
+        for p in pool:
             r = effective_rating(p)
             if name and name not in p["name"].lower():
                 continue
@@ -112,3 +122,8 @@ class ProblemStore:
 def effective_rating(p: dict) -> int | None:
     """The official rating, or our prediction when Codeforces hasn't rated it."""
     return p["rating"] if p["rating"] is not None else p["predicted_rating"]
+
+
+def problem_key(p: dict) -> tuple:
+    """Unique id across platforms: (contest_id, index) for Codeforces, ("lc", slug) for LeetCode."""
+    return ("lc", p["slug"]) if p.get("platform") == "lc" else (p["contest_id"], p["index"])

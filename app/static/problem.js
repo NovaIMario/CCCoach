@@ -14,7 +14,8 @@ const TEMPLATES = {
   cpp: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    return 0;\n}\n",
   python: "import sys\ninput = sys.stdin.readline\n\n\ndef main():\n    pass\n\n\nmain()\n",
 };
-const storageKey = lang => `cccoach:${PROBLEM.contest_id}${PROBLEM.index}:${lang}`;
+const problemId = PROBLEM.slug ? `lc:${PROBLEM.slug}` : `${PROBLEM.contest_id}${PROBLEM.index}`;
+const storageKey = lang => `cccoach:${problemId}:${lang}`;
 const load = lang => { try { return localStorage.getItem(storageKey(lang)); } catch { return null; } };
 const save = (lang, code) => { try { localStorage.setItem(storageKey(lang), code); } catch {} };
 
@@ -66,7 +67,7 @@ document.querySelectorAll("[data-mode]").forEach(btn => btn.addEventListener("cl
   try {
     const res = await fetch("/api/hint", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, contest_id: PROBLEM.contest_id, index: PROBLEM.index, code: editor ? editor.getValue() : "" }),
+      body: JSON.stringify({ ...PROBLEM, mode, code: editor ? editor.getValue() : "" }),
     });
     const data = await res.json();
     out.textContent = data.response || data.detail || "No response";

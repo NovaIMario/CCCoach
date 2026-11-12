@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ p.contest_id }}{{ p.index }} {{ p.name }} · CCCoach{% endblock %}
+{% block title %}{{ title }} · CCCoach{% endblock %}
 {% block head %}
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
@@ -7,18 +7,22 @@
 {% block content %}
 <div class="workspace">
   <section class="card statement">
-    <h1>{{ p.contest_id }}{{ p.index }}. {{ p.name }}</h1>
+    <h1>{{ title }}</h1>
     <p>
-      {% if rating %}<span class="pill">{{ rating }}{% if p.rating is none %} (predicted){% endif %}</span>{% endif %}
+      {% if rating %}<span class="pill" title="{% if is_lc %}LeetCode rating {{ p.lc_rating }}, converted to the Codeforces scale{% endif %}">
+        {{ rating }}{% if p.rating is none %} ({{ "estimated" if is_lc else "predicted" }}){% endif %}</span>{% endif %}
+      {% if is_lc %}<span class="pill">{{ p.difficulty }}</span>{% endif %}
       {% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}
     </p>
-    <p class="muted small">{{ p.contest_name }} · solved by {{ p.solved_count }}</p>
+    <p class="muted small">
+      {% if is_lc %}LeetCode · {{ p.lc_tags|join(", ") }}{% else %}{{ p.contest_name }} · solved by {{ p.solved_count }}{% endif %}
+    </p>
     {% if statement %}
       <div id="statement-text" class="statement-text">{{ statement }}</div>
     {% else %}
       <p class="muted">No local copy of this statement.</p>
     {% endif %}
-    <p><a href="https://codeforces.com/contest/{{ p.contest_id }}/problem/{{ p.index }}" target="_blank" rel="noopener">Open on Codeforces (full statement, examples, submit) &rarr;</a></p>
+    <p><a href="{{ ext_url }}" target="_blank" rel="noopener">Open on {{ "LeetCode" if is_lc else "Codeforces" }} (full statement, examples, submit) &rarr;</a></p>
   </section>
 
   <section class="card editor-pane">
@@ -49,7 +53,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script>const PROBLEM = {contest_id: {{ p.contest_id }}, index: {{ p.index|tojson }}};</script>
+<script>const PROBLEM = {{ js_problem|tojson }};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 <script src="/static/problem.js"></script>
 {% endblock %}

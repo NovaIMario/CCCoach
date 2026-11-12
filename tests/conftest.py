@@ -48,8 +48,26 @@ class FakeCF:
 
 class FakeLC:
     def profile(self, username):
+        if username == "nobody":
+            from app.leetcode import LeetCodeError
+            raise LeetCodeError("LeetCode user 'nobody' not found")
         return {"username": username, "solved_total": 10, "solved": {"Easy": 5, "Medium": 4, "Hard": 1},
-                "contest_rating": 1800, "top_percentage": 10.0, "contests": 3, "badge": None}
+                "contest_rating": 1800, "top_percentage": 10.0, "contests": 3, "badge": None,
+                "tag_counts": {"dynamic-programming": 6, "array": 10}, "recent_solved": ["lc-dp-1"]}
+
+    def statement(self, slug):
+        return f"Statement of {slug}"
+
+
+def make_lc(slug, rating, tags, lc_tags=None):
+    return {"platform": "lc", "slug": slug, "frontend_id": slug.split("-")[-1], "name": slug.replace("-", " ").title(),
+            "difficulty": "Medium", "lc_tags": lc_tags or [], "tags": tags, "rating": rating, "predicted_rating": None,
+            "lc_rating": rating + 600, "solved_count": 0, "url": f"https://leetcode.com/problems/{slug}/"}
+
+
+@pytest.fixture
+def lc_problems():
+    return [make_lc(f"lc-dp-{i}", 1600, ["dp"]) for i in range(1, 6)] + [make_lc("lc-greedy-1", 1600, ["greedy"])]
 
 
 class FakeHints:
@@ -69,10 +87,11 @@ class FakeRatingModel:
 
 
 @pytest.fixture
-def client(problems):
+def client(problems, lc_problems):
     # the user has solved lots of greedy/math/implementation but no dp or graphs
     solved = [(c, i) for c in range(1, 41) for i in ("A", "B")]
-    app = create_app(store=ProblemStore(problems, {"1/A": "Read $$$n$$$ and print it."}), cf=FakeCF(solved),
+    store = ProblemStore(problems, {"1/A": "Read $$$n$$$ and print it."}, lc_problems)
+    app = create_app(store=store, cf=FakeCF(solved),
                      lc=FakeLC(), hints=FakeHints(), rating_model=FakeRatingModel(), code_runner_enabled=True)
     with TestClient(app) as c:
         yield c

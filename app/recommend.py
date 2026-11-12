@@ -1,10 +1,11 @@
-"""Pick unsolved problems that train a user's weakest tags at a slightly-too-hard level."""
-from .problems import effective_rating
+"""Pick unsolved problems that train a user's weakest tags at a slightly-too-hard level.
+Works for Codeforces and LeetCode problems alike (both carry CF-scale ratings and CF tags)."""
+from .problems import effective_rating, problem_key
 
 IGNORED_TAGS = {"*special"}
 
 
-def recommend(all_problems: list[dict], solved: set[tuple[int, str]], weak_tags: list[str], level: int,
+def recommend(all_problems: list[dict], solved: set, weak_tags: list[str], level: int,
               n: int = 12, low: int = 0, high: int = 300) -> list[dict]:
     """Score = how weak the problem's tags are for this user + how close it is to level+100.
 
@@ -19,7 +20,7 @@ def recommend(all_problems: list[dict], solved: set[tuple[int, str]], weak_tags:
         r = effective_rating(p)
         if r is None or not (level + low <= r <= level + high):
             continue
-        if (p["contest_id"], p["index"]) in solved or IGNORED_TAGS & set(p["tags"]):
+        if problem_key(p) in solved or IGNORED_TAGS & set(p["tags"]):
             continue
         hits = [t for t in p["tags"] if t in weight]
         if not hits:
@@ -32,6 +33,6 @@ def recommend(all_problems: list[dict], solved: set[tuple[int, str]], weak_tags:
     for score, _, p, hits in scored[:n]:
         reason = f"Trains {', '.join(hits)}; rated {effective_rating(p)}"
         if p["rating"] is None:
-            reason += " (predicted)"
+            reason += " (estimated)" if p.get("platform") == "lc" else " (predicted)"
         out.append({**p, "score": round(score, 2), "reason": reason})
     return out

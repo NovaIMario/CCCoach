@@ -19,5 +19,8 @@ ENABLE_CODE_RUNNER = os.getenv("ENABLE_CODE_RUNNER", "1") == "1"
 # How long the cached Codeforces problemset stays fresh before it is re-downloaded.
 PROBLEMSET_MAX_AGE_HOURS = float(os.getenv("PROBLEMSET_MAX_AGE_HOURS", "24"))
 
+# LeetCode problem ratings are converted to the Codeforces scale as: CF ≈ LC − offset.
+LC_RATING_OFFSET = int(os.getenv("LC_RATING_OFFSET", "600"))
+
 # Set to 1 in tests and CI: never call Codeforces at startup, only use files in DATA_DIR.
 OFFLINE = os.getenv("CCCOACH_OFFLINE", "0") == "1"
