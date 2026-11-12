@@ -74,9 +74,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .recs { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .recs li { display: grid; }
 
+/* The search card holds the autocomplete dropdown: it must not clip it (.card has overflow-x: auto)
+   and must sit above the problem cards below it. */
+.card.form.search { overflow: visible; position: relative; z-index: 20; }
 .field { position: relative; }
 .dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: var(--card);
-            border: 1px solid var(--line); border-radius: 8px; max-height: 320px; overflow-y: auto; }
+            border: 1px solid var(--line); border-radius: 8px; max-height: 320px; overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
 .dropdown-item { padding: 6px 10px; cursor: pointer; }
 .dropdown-item:hover { background: var(--line); }
 
