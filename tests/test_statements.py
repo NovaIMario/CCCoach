@@ -57,3 +57,14 @@ def test_local_backend_round_trip(tmp_path):
     assert store.save(5, "b", "text") is True
     assert store.save(5, "B", "other") is False          # first one wins, index case-insensitive
     assert LocalStatements(tmp_path / "user_statements.json").get(5, "B") == "text"
+
+
+def test_health_reports_statement_source(client):
+    h = client.get("/health").json()
+    assert h["statements"] == 2 and h["statement_source"] == "FakeStatements" and h["statement_sync_error"] is None
+
+
+def test_short_error_hides_passwords():
+    from app.main import short_error
+    msg = short_error(Exception("could not connect postgresql://postgres.abc:s3cret@host:5432/db\nmore"))
+    assert "s3cret" not in msg and "postgres.abc:***@host" in msg

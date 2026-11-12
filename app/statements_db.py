@@ -41,6 +41,7 @@ class LocalStatements:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.Lock()
+        self.last_error = None
 
     def load_all(self) -> dict[str, str]:
         try:
@@ -128,7 +129,11 @@ def open_backend(database_url: str, data_dir: Path):
         try:
             return PostgresStatements(database_url)
         except Exception as e:
-            log.warning("Statement database unavailable (%s); using the local file", str(e).splitlines()[0])
+            msg = (str(e).strip().splitlines() or [type(e).__name__])[0][:200]
+            log.warning("Statement database unavailable (%s); using the local file", msg)
+            local = LocalStatements(data_dir / "user_statements.json")
+            local.last_error = f"database unavailable: {msg}"   # shown by /health
+            return local
     return LocalStatements(data_dir / "user_statements.json")
 
 

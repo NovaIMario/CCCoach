@@ -63,6 +63,13 @@ class TagRequest(BaseModel):
     statement: str = Field(min_length=20, max_length=20_000)
 
 
+def short_error(e: Exception) -> str:
+    """First line of an error, without anything that looks like a password in a URL."""
+    import re
+    line = (str(e).strip().splitlines() or [type(e).__name__])[0]
+    return re.sub(r"://([^:/@]+):[^@]+@", r"://\1:***@", line)[:200]
+
+
 def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = None,
                lc: LeetCodeClient | None = None, hints: HintService | None = None,
                rating_model=None, tag_model=None, code_runner_enabled: bool | None = None,
@@ -80,8 +87,10 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
                 for k, v in fresh.items():
                     s.store.statements.setdefault(k, v)
                 log.info("Statements synced: %d from %s (%d new)", len(fresh), type(s.statements).__name__, added)
+                s.statement_sync_error = s.statements.last_error if hasattr(s.statements, "last_error") else None
             except Exception as e:
-                log.warning("Statement sync failed: %s", str(e).splitlines()[0] if str(e) else e)
+                s.statement_sync_error = short_error(e)
+                log.warning("Statement sync failed: %s", s.statement_sync_error)
             s.statement_sync_done.set()
             if stop.wait(config.STATEMENT_REFRESH_HOURS * 3600):
                 return
@@ -112,6 +121,7 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
             s.statements = statements
         else:
             s.statements = open_backend(config.DATABASE_URL, config.DATA_DIR)
+        s.statement_sync_error = None
         s.statement_sync_done = threading.Event()  # set after the first sync (tests wait on it)
         stop = threading.Event()
         threading.Thread(target=sync_statements, args=(s, stop), daemon=True, name="statement-sync").start()
@@ -292,7 +302,10 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         st = app.state
         return {"ok": True, "problems": len(st.store.problems), "lc_problems": len(st.store.lc_problems),
                 "rating_model": st.rating_model is not None, "tag_model": st.tag_model is not None,
-                "code_runner": st.runner_on, "ai_hints": st.hints.enabled}
+                "code_runner": st.runner_on, "ai_hints": st.hints.enabled,
+                # statement diagnostics (never the URL or password)
+                "statements": len(st.store.statements), "database_configured": bool(config.DATABASE_URL),
+                "statement_source": type(st.statements).__name__, "statement_sync_error": st.statement_sync_error}
 
     @app.get("/api/problems")
     def api_problems(name: str = "", tag: str = "", min_rating: int | None = None,
