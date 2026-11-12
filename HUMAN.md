@@ -1,4 +1,4 @@
-# CPCoach: how it works (for humans)
+# CCCoach: how it works (for humans)
 
 This file explains the project so you can find your way around, explain it in an interview, or change it.
 

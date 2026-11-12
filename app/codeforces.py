@@ -21,7 +21,7 @@ class CodeforcesClient:
     def __init__(self, ttl: float = 600, min_interval: float = 0.6, http: httpx.Client | None = None):
         self.ttl = ttl
         self.min_interval = min_interval
-        self.http = http or httpx.Client(timeout=30, headers={"User-Agent": "CPCoach/1.0"})
+        self.http = http or httpx.Client(timeout=30, headers={"User-Agent": "CCCoach/1.0"})
         self._cache: dict[tuple, tuple[float, object]] = {}
         self._lock = threading.Lock()
         self._last_call = 0.0

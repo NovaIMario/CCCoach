@@ -23,7 +23,7 @@ class LeetCodeError(Exception):
 class LeetCodeClient:
     def __init__(self, ttl: float = 600, http: httpx.Client | None = None):
         self.ttl = ttl
-        self.http = http or httpx.Client(timeout=20, headers={"Referer": "https://leetcode.com", "User-Agent": "CPCoach/1.0"})
+        self.http = http or httpx.Client(timeout=20, headers={"Referer": "https://leetcode.com", "User-Agent": "CCCoach/1.0"})
         self._cache: dict[str, tuple[float, dict]] = {}
 
     def profile(self, username: str) -> dict:

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Models · CPCoach{% endblock %}
+{% block title %}Models · CCCoach{% endblock %}
 {% block content %}
 <h1>Models</h1>
 <div class="grid2">
@@ -11,7 +11,7 @@
       <tr><th>Tested on</th><td colspan="2">{{ rating_metrics.split }} ({{ rating_metrics.n_test }} problems)</td></tr>
       <tr><th></th><th>MAE</th><th>Within ±100</th></tr>
       <tr><td>Original (linear)</td><td>{{ rating_metrics.baseline_linear.mae }}</td><td>{{ (rating_metrics.baseline_linear.within_100 * 100)|round(1) }}%</td></tr>
-      <tr class="win"><td>CPCoach</td><td>{{ rating_metrics.gradient_boosting.mae }}</td><td>{{ (rating_metrics.gradient_boosting.within_100 * 100)|round(1) }}%</td></tr>
+      <tr class="win"><td>CCCoach</td><td>{{ rating_metrics.gradient_boosting.mae }}</td><td>{{ (rating_metrics.gradient_boosting.within_100 * 100)|round(1) }}%</td></tr>
     </table>
     {% else %}<p class="muted">Model not trained yet.</p>{% endif %}
   </div>
@@ -23,7 +23,7 @@
       <tr><th>Tested on</th><td colspan="2">{{ tag_metrics.split }} ({{ tag_metrics.n_test }} problems)</td></tr>
       <tr><th></th><th>Micro-F1</th><th>Macro-F1</th></tr>
       <tr><td>Original</td><td>{{ tag_metrics.baseline.micro_f1 }}</td><td>{{ tag_metrics.baseline.macro_f1 }}</td></tr>
-      <tr class="win"><td>CPCoach</td><td>{{ tag_metrics.improved.micro_f1 }}</td><td>{{ tag_metrics.improved.macro_f1 }}</td></tr>
+      <tr class="win"><td>CCCoach</td><td>{{ tag_metrics.improved.micro_f1 }}</td><td>{{ tag_metrics.improved.macro_f1 }}</td></tr>
     </table>
     {% else %}<p class="muted">Model not trained yet.</p>{% endif %}
   </div>

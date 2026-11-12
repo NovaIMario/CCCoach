@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ cf_handle or lc_user or "Profile" }} · CPCoach{% endblock %}
+{% block title %}{{ cf_handle or lc_user or "Profile" }} · CCCoach{% endblock %}
 {% block content %}
 <form class="card form inline" action="/profile" method="get">
   <input name="cf" value="{{ cf_handle }}" placeholder="Codeforces handle" autocomplete="off">

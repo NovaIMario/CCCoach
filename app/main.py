@@ -1,4 +1,4 @@
-"""CPCoach web app: pages (Jinja templates) and a JSON API.
+"""CCCoach web app: pages (Jinja templates) and a JSON API.
 
 `create_app` takes its dependencies as arguments so tests can pass in fakes
 instead of calling Codeforces, LeetCode or Gemini.
@@ -63,7 +63,7 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
         s.limiter = RateLimiter(limit=10, window=60)
         yield
 
-    app = FastAPI(title="CPCoach", lifespan=lifespan)
+    app = FastAPI(title="CCCoach", lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
     templates = Jinja2Templates(directory=HERE / "templates")
 

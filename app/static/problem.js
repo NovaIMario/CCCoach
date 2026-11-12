@@ -14,7 +14,7 @@ const TEMPLATES = {
   cpp: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    return 0;\n}\n",
   python: "import sys\ninput = sys.stdin.readline\n\n\ndef main():\n    pass\n\n\nmain()\n",
 };
-const storageKey = lang => `cpcoach:${PROBLEM.contest_id}${PROBLEM.index}:${lang}`;
+const storageKey = lang => `cccoach:${PROBLEM.contest_id}${PROBLEM.index}:${lang}`;
 const load = lang => { try { return localStorage.getItem(storageKey(lang)); } catch { return null; } };
 const save = (lang, code) => { try { localStorage.setItem(storageKey(lang), code); } catch {} };
 

@@ -1,12 +1,12 @@
-# CPCoach
+# CCCoach
 
 A training coach for competitive programmers. It reads your **Codeforces** and **LeetCode** history,
 finds the topics you under-practise for your rating, recommends the next problems to solve, and lets you
 solve them in the browser with a code editor, a code runner and AI hints.
 
-CPCoach merges three earlier projects into one app:
+CCCoach merges three earlier projects into one app:
 
-| Earlier project | What it did | What CPCoach adds |
+| Earlier project | What it did | What CCCoach adds |
 |---|---|---|
 | **CF Analysis** | Rating history, solved-tag counts, compare two users | Weak tags relative to your level, LeetCode stats, recommendations |
 | **AlgoReady** | Problem search with Trie autocomplete, Monaco editor, Gemini hints | Word-level autocomplete, C++ **and** Python, resource-limited runner, fixed AI prompt types |
@@ -17,7 +17,7 @@ CPCoach merges three earlier projects into one app:
 Both models are evaluated on **contests the model never saw** (20% of contests held out), which is stricter
 than a random split because problems from the same contest are correlated.
 
-| Model | Original (CFSeer approach) | CPCoach | Change |
+| Model | Original (CFSeer approach) | CCCoach | Change |
 |---|---|---|---|
 | Rating predictor, MAE | 226.4 | **119.8** | −47% |
 | Rating predictor, within ±100 | 28.6% | **53.8%** | ×1.9 |
@@ -65,12 +65,12 @@ python -m scripts.train_tags      # needs data/statements.json
 
 Tests (no network, no secrets):
 ```bash
-CPCOACH_OFFLINE=1 pytest -q
+CCCOACH_OFFLINE=1 pytest -q
 ```
 
 Docker:
 ```bash
-docker build -t cpcoach . && docker run -p 8000:8000 cpcoach
+docker build -t cccoach . && docker run -p 8000:8000 cccoach
 ```
 
 ## Security notes

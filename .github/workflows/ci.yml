@@ -17,16 +17,16 @@ jobs:
       # Unit + API tests use fake Codeforces/LeetCode/Gemini clients, so no secrets or network needed.
       - run: pytest -q
         env:
-          CPCOACH_OFFLINE: "1"
+          CCCOACH_OFFLINE: "1"
 
   docker:
     runs-on: ubuntu-latest
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t cpcoach .
+      - run: docker build -t cccoach .
       # Smoke test: boot the real image (it downloads the problemset from Codeforces) and hit /health.
       - run: |
-          docker run -d -p 8000:8000 --name app cpcoach
+          docker run -d -p 8000:8000 --name app cccoach
           for i in $(seq 1 60); do curl -fs localhost:8000/health && exit 0; sleep 2; done
           docker logs app; exit 1

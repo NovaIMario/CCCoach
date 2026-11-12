@@ -65,7 +65,7 @@ def run_code(language: str, code: str, stdin: str = "") -> RunResult:
     if len(code) > MAX_CODE:
         return RunResult("error", stderr="Code is too long (limit 100 KB)")
 
-    workdir = tempfile.mkdtemp(prefix="cpcoach-")
+    workdir = tempfile.mkdtemp(prefix="cccoach-")
     env = _clean_env(workdir)
     preexec = _limits if sys.platform.startswith("linux") else None
     try:
