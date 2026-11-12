@@ -105,3 +105,10 @@ def test_hint_chat_mode(client):
     bad_role = {"mode": "chat", "contest_id": 1, "index": "A", "message": "x", "history": [{"role": "system", "text": "x"}]}
     assert client.post("/api/hint", json=bad_role).status_code == 422
     assert client.post("/api/hint", json={"mode": "chat", "contest_id": 1, "index": "A", "message": "x" * 2001}).status_code == 422
+
+
+def test_favicons_are_served(client):
+    assert client.get("/favicon.ico").headers["content-type"] == "image/x-icon"
+    assert client.get("/static/favicon.svg").headers["content-type"].startswith("image/svg+xml")
+    assert client.get("/static/apple-touch-icon.png").status_code == 200
+    assert 'rel="icon" href="/static/favicon.svg' in client.get("/").text

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -130,6 +130,10 @@ def create_app(store: ProblemStore | None = None, cf: CodeforcesClient | None = 
 
     app = FastAPI(title="CCCoach", lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():  # browsers and crawlers ask for this exact path
+        return FileResponse(HERE / "static" / "favicon.ico", media_type="image/x-icon")
     templates = Jinja2Templates(directory=HERE / "templates")
     # Cache-buster for /static files: changes whenever any static file changes, so browsers
     # pick up new JS/CSS right after a deploy instead of serving a stale cached copy.

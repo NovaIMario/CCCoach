@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}CCCoach{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css?v={{ v }}">
+  <link rel="icon" href="/static/favicon.svg?v={{ v }}" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico?v={{ v }}" sizes="48x48">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{ v }}">
+  <meta name="theme-color" content="#1a1d23">
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
