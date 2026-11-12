@@ -55,6 +55,21 @@ This file explains the project so you can find your way around, explain it in an
 
 Search is a linear filter over ~11.5k dicts; that takes about a millisecond, so no database is needed.
 
+## LeetCode (`lc_problems.py`, `leetcode.py`)
+
+- **Problems:** on startup, LeetCode's GraphQL `questionList` (all problems, tags, Premium flag) and zerotrac's ratings
+  (~2,600 contest problems) are downloaded and cached in `data/lc_raw.json`. Premium problems are dropped.
+- **Rating:** CF rating = zerotrac rating − `LC_RATING_OFFSET` (600), rounded to 100, at least 800. Problems zerotrac
+  doesn't rate get the median zerotrac rating of their difficulty, computed from the data, shown as "estimated".
+- **Tags:** `LC_TO_CF_TAG` maps LeetCode tags to Codeforces tags (dynamic-programming → dp, union-find → dsu, ...).
+  Generic tags (array, hash-table) have no equivalent and are only shown on the problem page.
+- **Your history:** LeetCode publicly exposes per-tag solve counts and only the last 20 accepted problems. The tag
+  counts are added to your Codeforces solves in the weak-tag analysis, but only for tags LeetCode can express;
+  "constructive algorithms" etc. use Codeforces solves only, so they don't look weak just because LeetCode can't
+  label them. The 20 recent problems are excluded from LeetCode recommendations.
+- **Statements** are fetched on demand from LeetCode (HTML → plain text) and cached in memory.
+- Everything LeetCode-related is optional: if LeetCode is unreachable, the app starts with Codeforces only.
+
 ## The models (`ml/`, `scripts/`)
 
 **Shared features** (`ml/features.py`) are used by both training and the app, so they can't drift apart.
@@ -86,6 +101,8 @@ or turn the runner off with `ENABLE_CODE_RUNNER=0`.
 ## AI hints (`ai.py`)
 
 Three fixed modes: `hint` (one nudge, no code), `review` (bugs in your code), `solution` (full explanation + C++).
+Gemini models are often overloaded (503) or hang until a 504, so each model gets 25s and then the next model in
+`FALLBACK_MODELS` is tried (the Flash-Lite models are rarely busy). A 404 (model retired for this key) also moves on.
 The prompt includes the statement (if available) and your editor contents. There is no free-text mode, so the
 server's API key can't be used as a general chatbot. 10 requests/minute per IP.
 
@@ -99,7 +116,7 @@ server's API key can't be used as a general chatbot. 10 requests/minute per IP.
 
 ## Tests (`tests/`)
 
-31 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
+48 tests, no network: `conftest.py` builds a 200-problem fake problemset and fake Codeforces/LeetCode/Gemini clients,
 then `create_app(...)` is given those fakes. Covered: stats, weak tags, recommendations, features, runner limits and
 secrets, every page renders, HTML escaping, API errors (unknown handle → 404, bad language → 400).
 CI (`.github/workflows/ci.yml`) runs the tests, then builds the Docker image and checks `/health`.

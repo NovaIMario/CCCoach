@@ -36,9 +36,13 @@ What made the difference:
 
 - **Profile** — rating history chart, solved-by-rating histogram, LeetCode solved counts and contest rating.
 - **Weak tags** — compares each tag's share of what you solved with its share of problems around your rating.
-- **Recommendations** — unsolved problems in your weakest tags, 0–300 above your level.
+- **Recommendations** — unsolved Codeforces *and* LeetCode problems in your weakest tags, 0–300 above your level.
+- **LeetCode problems on the Codeforces scale** — ~3,300 free LeetCode problems, rated with zerotrac's contest ratings
+  converted as CF ≈ LC − 600 (configurable with `LC_RATING_OFFSET`); unrated ones get the median rating of their
+  difficulty. LeetCode tags are mapped to Codeforces tags, and your LeetCode per-tag solve counts feed the weak-tag analysis.
 - **Problem search** — Trie autocomplete on any word of the name, filter by tag and rating (predicted ratings for unrated problems).
 - **Solve page** — statement with maths, Monaco editor (C++17 / Python 3), run against custom input, AI hint / code review / solution.
+  When a Gemini model is overloaded, the coach falls back to lighter models instead of failing.
 - **Compare** — two Codeforces users side by side.
 - **Models page** — metrics and a live tag predictor.
 
